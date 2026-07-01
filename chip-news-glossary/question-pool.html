@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>芯片领域问题池</title>
+    <meta
+      name="description"
+      content="面向芯片新闻术语表的开放式问题池，用来持续追问 GPU、CUDA、HBM、台积电、先进封装、出口管制等概念。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #1c2644;
+        --navy-2: #263457;
+        --paper: #f0ece3;
+        --paper-2: #e7dfd1;
+        --ink: #192032;
+        --muted: #647087;
+        --cream: #e8dfcf;
+        --line: #c9c0af;
+        --line-dark: #364464;
+        --gold: #c8a870;
+        --rose: #c47c72;
+        --green: #7f9d67;
+        --shadow: 0 24px 70px rgba(18, 24, 42, 0.22);
+        --display: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+        --body: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", "Noto Sans SC", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: var(--body);
+        background:
+          radial-gradient(circle at 92% 8%, rgba(200, 168, 112, 0.2), transparent 26rem),
+          linear-gradient(135deg, var(--navy) 0%, #11182b 44%, var(--paper) 44%, var(--paper) 100%);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a,
+      button {
+        font: inherit;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0 68px;
+      }
+
+      .hero {
+        min-height: 500px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.04fr) minmax(340px, 0.96fr);
+        gap: 28px;
+        align-items: stretch;
+      }
+
+      .hero-copy {
+        color: var(--cream);
+        padding: 34px 0 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+      }
+
+      .kicker {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: var(--gold);
+        border-left: 3px solid var(--gold);
+        padding-left: 12px;
+        line-height: 1.5;
+      }
+
+      h1 {
+        font-family: var(--display);
+        font-size: 4.65rem;
+        line-height: 0.98;
+        margin: 36px 0 22px;
+        letter-spacing: 0;
+        font-weight: 700;
+        max-width: 780px;
+      }
+
+      h1 em {
+        color: var(--gold);
+        font-style: italic;
+        font-weight: 600;
+      }
+
+      .hero-copy p {
+        max-width: 690px;
+        color: rgba(232, 223, 207, 0.82);
+        font-size: 1.08rem;
+        line-height: 1.9;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .button {
+        border: 1px solid var(--line-dark);
+        color: var(--cream);
+        background: rgba(255, 255, 255, 0.035);
+        padding: 11px 14px;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .button.primary {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--ink);
+      }
+
+      .brief-panel {
+        background: rgba(240, 236, 227, 0.97);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        padding: 24px;
+        min-height: 500px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 18px;
+      }
+
+      .brief-panel h2 {
+        font-family: var(--display);
+        font-size: 2.35rem;
+        line-height: 1.08;
+        margin: 0;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .checklist {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .checklist li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      .checklist span {
+        font-family: var(--mono);
+        color: var(--rose);
+      }
+
+      .section {
+        margin-top: 42px;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(25, 32, 50, 0.25);
+        margin-bottom: 18px;
+      }
+
+      .section-head h2 {
+        font-family: var(--display);
+        font-size: 2.75rem;
+        line-height: 1.04;
+        margin: 0;
+      }
+
+      .section-head p {
+        max-width: 560px;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .exam-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .question-card {
+        background: rgba(240, 236, 227, 0.97);
+        border: 1px solid var(--line);
+        min-height: 420px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .question-top {
+        padding: 18px 18px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .tag {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        border: 1px solid var(--line);
+        color: var(--navy);
+        padding: 5px 7px;
+      }
+
+      .tag.score {
+        color: var(--ink);
+        background: rgba(200, 168, 112, 0.34);
+        border-color: rgba(200, 168, 112, 0.78);
+      }
+
+      .question-card h3 {
+        font-family: var(--display);
+        font-size: 1.72rem;
+        line-height: 1.16;
+        margin: 0;
+      }
+
+      .prompt,
+      .why,
+      .trigger {
+        padding: 16px 18px 0;
+        color: var(--muted);
+        line-height: 1.75;
+        margin: 0;
+      }
+
+      .why strong,
+      .trigger strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .subquestions {
+        margin: 14px 18px 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+
+      .subquestions li {
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        color: var(--ink);
+        line-height: 1.62;
+        font-size: 0.94rem;
+      }
+
+      .terms {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 18px 0;
+      }
+
+      .term-chip {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        border: 1px solid var(--line);
+        color: var(--navy);
+        background: #fbf8f0;
+        padding: 5px 7px;
+      }
+
+      .hint {
+        margin: auto 18px 18px;
+        padding: 12px;
+        background: var(--paper-2);
+        border-left: 3px solid var(--gold);
+        color: var(--ink);
+        line-height: 1.65;
+        font-size: 0.94rem;
+      }
+
+      .rubric {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .rubric-card {
+        background: var(--navy);
+        color: var(--cream);
+        border: 1px solid var(--line-dark);
+        min-height: 210px;
+        padding: 22px;
+      }
+
+      .rubric-card h3 {
+        font-family: var(--display);
+        font-size: 2rem;
+        line-height: 1.05;
+        margin: 0 0 14px;
+      }
+
+      .rubric-card p {
+        color: rgba(232, 223, 207, 0.78);
+        line-height: 1.75;
+        margin: 0;
+      }
+
+      .notes-panel {
+        background: rgba(240, 236, 227, 0.97);
+        border: 1px solid var(--line);
+        padding: 22px;
+      }
+
+      .notes-panel h3 {
+        font-family: var(--display);
+        font-size: 2.05rem;
+        line-height: 1.08;
+        margin: 0 0 14px;
+      }
+
+      .notes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .note-item {
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .note-item strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+
+      .comments {
+        background: rgba(240, 236, 227, 0.96);
+        border: 1px solid var(--line);
+        margin-top: 42px;
+        padding: 24px;
+      }
+
+      .comments h2 {
+        font-family: var(--display);
+        font-size: 2.2rem;
+        line-height: 1.05;
+        margin: 0 0 10px;
+      }
+
+      .comments p {
+        color: var(--muted);
+        line-height: 1.75;
+        margin: 0 0 18px;
+      }
+
+      footer {
+        color: rgba(232, 223, 207, 0.68);
+        margin-top: 44px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line-dark);
+        font-size: 0.9rem;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 980px) {
+        body {
+          background:
+            radial-gradient(circle at 100% 0%, rgba(200, 168, 112, 0.18), transparent 22rem),
+            linear-gradient(180deg, var(--navy) 0 610px, var(--paper) 610px 100%);
+        }
+
+        .hero,
+        .exam-grid,
+        .rubric,
+        .notes-grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 3.35rem;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .page {
+          width: min(100% - 20px, 1180px);
+          padding-top: 16px;
+        }
+
+        h1 {
+          font-size: 2.55rem;
+          line-height: 1.03;
+        }
+
+        .brief-panel,
+        .rubric-card,
+        .notes-panel {
+          padding: 18px;
+        }
+
+        .section-head {
+          grid-template-columns: 1fr;
+        }
+
+        .section-head h2 {
+          font-size: 2.12rem;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <div>
+            <div class="kicker">Semiconductor Question Pool / Living System</div>
+            <h1 id="page-title">用固定问题池，持续训练你的 <em>芯片新闻理解力</em></h1>
+            <p>
+              这个页面是芯片领域的长期问题池。每次听播客、读新闻、和 AI 讨论之后，都回到这些问题里补一段回答，观察自己的理解如何变深。2026 年 7 月 6 日可以用它做第一次阶段验收。
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#questions">打开问题池</a>
+              <a class="button" href="./index.html">返回术语表</a>
+            </div>
+          </div>
+        </div>
+
+        <aside class="brief-panel" aria-labelledby="target-title">
+          <h2 id="target-title">使用方式</h2>
+          <ul class="checklist">
+            <li><span>01</span><div>读到一条芯片新闻后，选 1 个相关问题和 AI 讨论。</div></li>
+            <li><span>02</span><div>遇到新术语时，先补术语卡片，再回到问题池找关联问题。</div></li>
+            <li><span>03</span><div>每周挑 1 个问题复盘一次，只沉淀最有价值的一小段。</div></li>
+            <li><span>04</span><div>2026 年 7 月 6 日可以做第一次阶段验收。</div></li>
+            <li><span>05</span><div>长期目标是把输入转成自己的结构和观点。</div></li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="section" aria-labelledby="rubric-title">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Loop</div>
+            <h2 id="rubric-title">问题池怎么提升认知</h2>
+          </div>
+          <p>问题池的作用是固定追问方向。你的回答会随着术语积累、新闻输入和讨论逐步更新。</p>
+        </div>
+        <div class="rubric">
+          <article class="rubric-card">
+            <h3>输入</h3>
+            <p>听一集播客，读一篇文章，或看一条芯片新闻标题，把陌生词记录下来。</p>
+          </article>
+          <article class="rubric-card">
+            <h3>结构</h3>
+            <p>把新词放到算力、制造、生态、管制四类里，再关联到一个固定问题。</p>
+          </article>
+          <article class="rubric-card">
+            <h3>输出</h3>
+            <p>用自己的话回答问题，写出当前判断和仍然模糊的地方。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="questions" aria-labelledby="questions-title">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Open Questions</div>
+            <h2 id="questions-title">固定问题池</h2>
+          </div>
+          <p>每张卡片都是一个思考触发器。真正的回答可以发生在你和 AI 的对话里。</p>
+        </div>
+        <div class="exam-grid" id="exam-grid"></div>
+      </section>
+
+      <section class="section" aria-labelledby="reflection-title">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Reflection</div>
+            <h2 id="reflection-title">复盘与下一轮问题</h2>
+          </div>
+          <p>每次更新问题池后，记录下一步要追的概念或新闻线索。</p>
+        </div>
+        <article class="notes-panel">
+          <h3>每周只沉淀一小段</h3>
+          <div class="notes-grid">
+            <div class="note-item">
+              <strong>补术语</strong>
+              从讨论里选 1-3 个新词，补到术语表的 summary、why、trap。
+            </div>
+            <div class="note-item">
+              <strong>补观点</strong>
+              把最清楚的一段判断写进术语表首页的观点草稿。
+            </div>
+            <div class="note-item">
+              <strong>补问题</strong>
+              如果反复卡在同一处，把它新增为问题池的一张卡片。
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="comments" aria-labelledby="comments-title">
+        <h2 id="comments-title">评论</h2>
+        <p>欢迎补充问题、回答卡片，或留下你想继续追问的芯片新闻线索。评论需要登录 GitHub。</p>
+        <script
+          src="https://utteranc.es/client.js"
+          repo="gsmtoday0329/gsmtoday0329.github.io"
+          issue-term="pathname"
+          label="comment"
+          theme="github-light"
+          crossorigin="anonymous"
+          async>
+        </script>
+      </section>
+
+      <footer>
+        这个页面服务于芯片新闻术语表的问题沉淀，后续可以继续追加问题和复盘记录。
+      </footer>
+    </main>
+
+    <script>
+      const questions = [
+        {
+          id: "q1",
+          group: "术语定位",
+          score: "定位",
+          title: "一条芯片新闻在讲哪类问题？",
+          prompt: "看到新闻标题时，先判断它主要落在算力、制造、生态、管制中的哪一类。",
+          why: "分类能力是理解芯片新闻的入口。先知道新闻在讲哪条链路，后面的术语才有位置。",
+          subquestions: ["它涉及 GPU、HBM、数据中心，还是制程、封装、产能？", "它在讲产品能力、供应瓶颈，还是政策限制？", "这条新闻会影响哪类公司？"],
+          terms: ["GPU", "HBM", "台积电", "出口管制"],
+          trigger: "当你连续 3 次分不清新闻类型时，说明需要补一个新术语或新分类。"
+        },
+        {
+          id: "q2",
+          group: "概念解释",
+          score: "生态",
+          title: "CUDA 为什么会成为英伟达的护城河？",
+          prompt: "从开发者、深度学习框架、工具链、模型迁移成本四个角度理解 CUDA。",
+          why: "很多国产 GPU 讨论会落到软件生态。理解 CUDA，才能理解硬件参数之外的替代难度。",
+          subquestions: ["CUDA 更像 IDE、JDK、运行时，还是生态平台？", "PyTorch、TensorFlow 为什么长期围绕 CUDA 优化？", "客户从 CUDA 迁移到其他平台会遇到什么成本？"],
+          terms: ["CUDA", "软件生态", "PyTorch", "客户迁移"],
+          trigger: "当你能用程序员类比讲清 CUDA，就可以补一张更成熟的 CUDA 术语卡。"
+        },
+        {
+          id: "q3",
+          group: "新闻拆解",
+          score: "新闻",
+          title: "一条新闻里的瓶颈到底在哪里？",
+          prompt: "看到“高端 AI GPU 供给紧张，HBM 与先进封装成为交付瓶颈”这类标题，拆出真正的限制环节。",
+          why: "芯片新闻经常把多个瓶颈写在一句话里。拆瓶颈能避免只记住热词。",
+          subquestions: ["这条新闻卡在芯片设计、制造、内存、封装，还是客户验证？", "瓶颈是短期产能问题，还是长期能力问题？", "谁会因此受益，谁会因此受限？"],
+          terms: ["AI GPU", "HBM", "先进封装", "客户验证"],
+          trigger: "当你能把一个标题拆成 3 个瓶颈，就可以把它整理成一段观点草稿。"
+        },
+        {
+          id: "q4",
+          group: "产业链",
+          score: "分工",
+          title: "英伟达为什么找台积电制造？",
+          prompt: "用 Fabless、Foundry、IDM 的分工理解芯片设计公司和制造公司的关系。",
+          why: "代工模式是半导体行业的基本分工。理解它，才能理解台积电为什么是全球供应链关键节点。",
+          subquestions: ["英伟达掌握了哪段价值链？", "台积电掌握了哪段价值链？", "先进制程、良率和资本投入为什么让制造很难复制？"],
+          terms: ["Fabless", "Foundry", "IDM", "良率"],
+          trigger: "当你能解释一家芯片公司属于哪种模式，就可以新增或完善商业模式相关术语。"
+        },
+        {
+          id: "q5",
+          group: "国产替代",
+          score: "主线",
+          title: "国产 GPU 的差距应该怎么拆？",
+          prompt: "把差距拆成硬件性能、制程/封装、HBM、软件生态、客户迁移和稳定供货。",
+          why: "这是芯片学习的主问题之一。它能把算力、制造、生态和管制全部串起来。",
+          subquestions: ["差距来自硬件参数，还是来自软件生态？", "制程、HBM、先进封装分别限制了什么？", "客户为什么不会轻易迁移训练和推理任务？"],
+          terms: ["国产 GPU", "CUDA", "HBM", "先进封装"],
+          trigger: "当你能写出一段 150 字解释，就可以把它放到首页观点草稿里。"
+        },
+        {
+          id: "q6",
+          group: "政策理解",
+          score: "管制",
+          title: "出口管制会卡住哪些环节？",
+          prompt: "从芯片产品、制造设备、EDA、先进制程、客户信心里拆解出口管制的影响。",
+          why: "中美科技限制会直接改变企业采购、研发路线和供应链安全感。",
+          subquestions: ["限制的是高端 GPU、制造设备，还是设计工具？", "实体清单会怎样影响融资、客户和研发？", "企业会如何调整供应链？"],
+          terms: ["出口管制", "实体清单", "EDA", "先进制程"],
+          trigger: "当一条政策新闻看不懂时，先回到这张卡，找出被限制的具体环节。"
+        },
+        {
+          id: "q7",
+          group: "制造理解",
+          score: "制造",
+          title: "良率和产能为什么总被提到？",
+          prompt: "用样品、量产、成本、交付和客户信任理解良率与产能。",
+          why: "芯片公司发布产品和稳定商业化供货之间，往往隔着制造能力和产能爬坡。",
+          subquestions: ["做出样品和稳定交付有什么差别？", "良率会怎样影响单颗芯片成本？", "先进封装产能为什么也会成为瓶颈？"],
+          terms: ["良率", "产能", "先进制程", "CoWoS"],
+          trigger: "当你看到“量产”“爬坡”“供货”这类词，就回到这张卡。"
+        },
+        {
+          id: "q8",
+          group: "系统思考",
+          score: "系统",
+          title: "AI 数据中心为什么需要系统能力",
+          prompt: "从网络互联、电力、散热、调度和运维理解 AI 集群的真实算力。",
+          why: "AI 竞争会从单卡性能延伸到数据中心系统能力。很多算力浪费发生在集群协同里。",
+          subquestions: ["单卡性能和集群效率有什么差别？", "网络互联为什么影响训练效率？", "电力和散热为什么会限制数据中心扩张？"],
+          terms: ["数据中心", "互联", "训练", "推理"],
+          trigger: "当新闻从芯片转到云厂商或数据中心投资时，优先用这张卡理解。"
+        },
+        {
+          id: "q9",
+          group: "术语创作",
+          score: "卡片",
+          title: "哪些新词值得补进术语表？",
+          prompt: "遇到反复出现、影响判断、又说不清楚的词，就把它转成 summary、why、trap。",
+          why: "术语表靠持续增量变有用。新增术语应该来自真实阅读和真实困惑。",
+          subquestions: ["这个词是否反复出现在新闻里？", "它能解释哪个产业问题？", "初学者最容易误解它什么？"],
+          terms: ["Chiplet", "RISC-V", "DUV", "EUV", "ASIC"],
+          trigger: "当一个词一周内出现 3 次，或者卡住你对新闻的理解，就补进术语表。"
+        },
+        {
+          id: "q10",
+          group: "观点输出",
+          score: "观点",
+          title: "未来两年，AI 算力芯片最关键的瓶颈是什么？",
+          prompt: "从 HBM、先进封装、CUDA 生态、出口管制、数据中心成本中选一条主线形成判断。",
+          why: "这个问题逼你从术语记忆进入趋势判断。观点可以粗糙，但要有因果链。",
+          subquestions: ["瓶颈在供给侧还是需求侧？", "它更像短期产能问题，还是长期生态问题？", "这个判断如果错了，可能错在哪里？"],
+          terms: ["HBM", "先进封装", "CUDA", "出口管制", "数据中心成本"],
+          trigger: "当你能清楚写出一个主线判断，就可以对外输出一篇短文。"
+        }
+      ];
+
+      const grid = document.querySelector("#exam-grid");
+
+      grid.innerHTML = questions
+        .map(
+          (item, index) => `
+            <article class="question-card">
+              <div class="question-top">
+                <div class="meta">
+                  <span class="tag">${String(index + 1).padStart(2, "0")} / ${questions.length}</span>
+                  <span class="tag">${item.group}</span>
+                  <span class="tag score">${item.score}</span>
+                </div>
+                <h3>${item.title}</h3>
+              </div>
+              <p class="prompt">${item.prompt}</p>
+              <p class="why"><strong>为什么重要：</strong>${item.why}</p>
+              <ul class="subquestions">
+                ${item.subquestions.map((question) => `<li>${question}</li>`).join("")}
+              </ul>
+              <div class="terms">
+                ${item.terms.map((term) => `<span class="term-chip">${term}</span>`).join("")}
+              </div>
+              <div class="hint"><strong>沉淀触发：</strong>${item.trigger}</div>
+            </article>
+          `
+        )
+        .join("");
+    </script>
+  </body>
+</html>

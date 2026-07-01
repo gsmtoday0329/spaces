@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>芯片新闻术语表</title>
+    <meta
+      name="description"
+      content="围绕 AI 算力芯片、国产 GPU、中美科技限制与半导体供应链的中文术语表，帮助读者看懂芯片新闻。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #1c2644;
+        --navy-2: #263457;
+        --paper: #f0ece3;
+        --paper-2: #e7dfd1;
+        --ink: #192032;
+        --muted: #647087;
+        --cream: #e8dfcf;
+        --line: #c9c0af;
+        --line-dark: #364464;
+        --gold: #c8a870;
+        --teal: #7aa9a5;
+        --rose: #c47c72;
+        --green: #91ad72;
+        --shadow: 0 24px 70px rgba(18, 24, 42, 0.22);
+        --display: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+        --body: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", "Noto Sans SC", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(200, 168, 112, 0.22), transparent 28rem),
+          linear-gradient(135deg, var(--navy) 0%, #11182b 46%, var(--paper) 46%, var(--paper) 100%);
+        color: var(--ink);
+        font-family: var(--body);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0 64px;
+      }
+
+      .hero {
+        min-height: 520px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+        gap: 28px;
+        align-items: stretch;
+      }
+
+      .hero-copy {
+        color: var(--cream);
+        padding: 34px 0 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+      }
+
+      .kicker {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: var(--gold);
+        border-left: 3px solid var(--gold);
+        padding-left: 12px;
+        line-height: 1.5;
+      }
+
+      h1 {
+        font-family: var(--display);
+        font-size: 4.8rem;
+        line-height: 0.96;
+        margin: 36px 0 22px;
+        letter-spacing: 0;
+        font-weight: 700;
+        max-width: 760px;
+      }
+
+      h1 em {
+        color: var(--gold);
+        font-style: italic;
+        font-weight: 600;
+      }
+
+      .hero-copy p {
+        max-width: 680px;
+        color: rgba(232, 223, 207, 0.82);
+        font-size: 1.08rem;
+        line-height: 1.9;
+      }
+
+      .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 34px;
+      }
+
+      .metric {
+        border: 1px solid var(--line-dark);
+        background: rgba(255, 255, 255, 0.035);
+        padding: 18px 16px;
+        min-height: 98px;
+      }
+
+      .metric strong {
+        display: block;
+        color: var(--cream);
+        font-family: var(--display);
+        font-size: 2rem;
+        line-height: 1;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 10px;
+        color: rgba(232, 223, 207, 0.65);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .study-panel {
+        background: rgba(240, 236, 227, 0.96);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        padding: 24px;
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        min-height: 520px;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: start;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+      }
+
+      .panel-head h2 {
+        font-family: var(--display);
+        font-size: 2.15rem;
+        line-height: 1.08;
+        margin: 0;
+      }
+
+      .status-pill {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--navy);
+        border: 1px solid var(--line);
+        padding: 8px 10px;
+        white-space: nowrap;
+      }
+
+      .search-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        margin: 18px 0 16px;
+      }
+
+      .search-row input {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #fbf8f0;
+        color: var(--ink);
+        padding: 12px 14px;
+        border-radius: 0;
+        outline: none;
+      }
+
+      .search-row input:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(200, 168, 112, 0.22);
+      }
+
+      .icon-button {
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: var(--paper);
+        min-width: 46px;
+        cursor: pointer;
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .filter {
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+
+      .filter[aria-pressed="true"] {
+        color: var(--ink);
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+
+      .flashcard {
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0)),
+          var(--paper-2);
+        min-height: 232px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .flashcard .label {
+        font-family: var(--mono);
+        color: var(--rose);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+      }
+
+      .flashcard h3 {
+        font-family: var(--display);
+        font-size: 2.4rem;
+        line-height: 1;
+        margin: 10px 0 12px;
+      }
+
+      .flashcard p {
+        color: var(--muted);
+        line-height: 1.75;
+        margin: 0;
+      }
+
+      .flash-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .text-button {
+        border: 1px solid var(--line);
+        background: #fbf8f0;
+        color: var(--ink);
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+
+      .text-button.primary {
+        background: var(--navy);
+        color: var(--paper);
+        border-color: var(--navy);
+      }
+
+      .section {
+        margin-top: 42px;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        border-bottom: 1px solid rgba(25, 32, 50, 0.25);
+        padding-bottom: 16px;
+        margin-bottom: 18px;
+      }
+
+      .section-head h2 {
+        font-family: var(--display);
+        font-size: 2.8rem;
+        line-height: 1.04;
+        margin: 0;
+      }
+
+      .section-head p {
+        max-width: 540px;
+        color: var(--muted);
+        line-height: 1.8;
+        margin: 0;
+      }
+
+      .route {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .day {
+        background: rgba(240, 236, 227, 0.94);
+        border: 1px solid var(--line);
+        min-height: 142px;
+        padding: 14px;
+      }
+
+      .day .num {
+        font-family: var(--mono);
+        color: var(--rose);
+        font-size: 0.74rem;
+      }
+
+      .day strong {
+        display: block;
+        margin: 12px 0 8px;
+        font-size: 1rem;
+        line-height: 1.35;
+      }
+
+      .day span {
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.55;
+      }
+
+      .term-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .term-card {
+        background: rgba(240, 236, 227, 0.96);
+        border: 1px solid var(--line);
+        padding: 18px;
+        min-height: 328px;
+        display: flex;
+        flex-direction: column;
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          border-color 180ms ease;
+      }
+
+      .term-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 40px rgba(18, 24, 42, 0.16);
+        border-color: rgba(200, 168, 112, 0.9);
+      }
+
+      .term-top {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .term-card h3 {
+        font-family: var(--display);
+        font-size: 1.72rem;
+        line-height: 1.08;
+        margin: 0;
+      }
+
+      .tag {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        color: var(--navy);
+        border: 1px solid var(--line);
+        padding: 5px 7px;
+        white-space: nowrap;
+      }
+
+      .term-card p {
+        color: var(--muted);
+        line-height: 1.78;
+        margin: 0 0 14px;
+      }
+
+      .term-card dl {
+        margin: auto 0 0;
+        display: grid;
+        gap: 10px;
+      }
+
+      .term-card dt {
+        font-family: var(--mono);
+        color: var(--rose);
+        font-size: 0.72rem;
+        margin-bottom: 4px;
+      }
+
+      .term-card dd {
+        margin: 0;
+        line-height: 1.65;
+        color: var(--ink);
+        font-size: 0.95rem;
+      }
+
+      .question-wall {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 16px;
+      }
+
+      .question-card,
+      .output-card {
+        background: var(--navy);
+        color: var(--cream);
+        border: 1px solid var(--line-dark);
+        padding: 24px;
+        min-height: 320px;
+      }
+
+      .question-card h3,
+      .output-card h3 {
+        font-family: var(--display);
+        font-size: 2.2rem;
+        line-height: 1.05;
+        margin: 0 0 18px;
+      }
+
+      .question-list {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .question-list li {
+        border-top: 1px solid var(--line-dark);
+        padding-top: 12px;
+        color: rgba(232, 223, 207, 0.82);
+        line-height: 1.65;
+      }
+
+      .output-card {
+        background: rgba(240, 236, 227, 0.96);
+        color: var(--ink);
+        border-color: var(--line);
+      }
+
+      .output-card textarea {
+        width: 100%;
+        min-height: 190px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        background: #fbf8f0;
+        padding: 14px;
+        color: var(--ink);
+        line-height: 1.7;
+        outline: none;
+      }
+
+      .empty {
+        display: none;
+        background: rgba(240, 236, 227, 0.96);
+        border: 1px solid var(--line);
+        padding: 28px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .comments {
+        background: rgba(240, 236, 227, 0.96);
+        border: 1px solid var(--line);
+        margin-top: 42px;
+        padding: 24px;
+      }
+
+      .comments h2 {
+        font-family: var(--display);
+        font-size: 2.2rem;
+        line-height: 1.05;
+        margin: 0 0 10px;
+      }
+
+      .comments p {
+        color: var(--muted);
+        line-height: 1.75;
+        margin: 0 0 18px;
+      }
+
+      footer {
+        color: rgba(232, 223, 207, 0.68);
+        margin-top: 44px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line-dark);
+        font-size: 0.9rem;
+        line-height: 1.7;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      @media (max-width: 980px) {
+        body {
+          background:
+            radial-gradient(circle at 0% 0%, rgba(200, 168, 112, 0.2), transparent 22rem),
+            linear-gradient(180deg, var(--navy) 0 620px, var(--paper) 620px 100%);
+        }
+
+        .hero,
+        .question-wall {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 3.4rem;
+        }
+
+        .route {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .term-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 680px) {
+        .page {
+          width: min(100% - 20px, 1180px);
+          padding-top: 16px;
+        }
+
+        h1 {
+          font-size: 2.55rem;
+          line-height: 1.02;
+        }
+
+        .hero-metrics,
+        .route,
+        .term-grid,
+        .section-head {
+          grid-template-columns: 1fr;
+        }
+
+        .study-panel,
+        .question-card,
+        .output-card {
+          padding: 18px;
+        }
+
+        .panel-head {
+          flex-direction: column;
+        }
+
+        .section-head h2 {
+          font-size: 2.1rem;
+        }
+
+        .search-row {
+          grid-template-columns: 1fr;
+        }
+
+        .icon-button {
+          min-height: 42px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <div>
+            <div class="kicker">AI Compute / Semiconductor / News Glossary</div>
+            <h1 id="page-title">看懂芯片新闻，从 <em>高频术语</em> 开始</h1>
+            <p>
+              面向中文芯片新闻、产业文章和播客的个人术语库。把反复出现的名词变成熟词，再围绕“国产 GPU
+              到底差在哪里”“美国为什么卡芯片”“台积电为什么关键”等问题逐渐积累判断。
+            </p>
+          </div>
+          <div class="hero-metrics" aria-label="学习范围">
+            <div class="metric">
+              <strong>4</strong>
+              <span>个理解模块：算力、制造、生态、管制</span>
+            </div>
+            <div class="metric">
+              <strong>26</strong>
+              <span>个初始高频术语，后续可以持续扩充</span>
+            </div>
+            <div class="metric">
+              <strong>∞</strong>
+              <span>面向长期积累，用观点和问题串联词汇</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="study-panel" aria-labelledby="flash-title">
+          <div class="panel-head">
+            <h2 id="flash-title">今日抽认</h2>
+            <span class="status-pill" id="card-count">01 / 26</span>
+          </div>
+          <div class="search-row">
+            <input id="search" type="search" placeholder="搜索术语、问题、公司或关键词" />
+            <button class="icon-button" id="clear-search" aria-label="清空搜索">×</button>
+          </div>
+          <div>
+            <div class="filters" aria-label="术语分类">
+              <button class="filter" data-filter="all" aria-pressed="true">全部</button>
+              <button class="filter" data-filter="compute" aria-pressed="false">算力</button>
+              <button class="filter" data-filter="manufacturing" aria-pressed="false">制造</button>
+              <button class="filter" data-filter="ecosystem" aria-pressed="false">生态</button>
+              <button class="filter" data-filter="policy" aria-pressed="false">管制</button>
+            </div>
+            <article class="flashcard">
+              <div>
+                <div class="label" id="flash-category">Compute</div>
+                <h3 id="flash-term">GPU</h3>
+                <p id="flash-text">
+                  图形处理器，擅长并行计算。AI 训练和推理需要大量矩阵运算，所以 GPU 成为大模型时代的核心算力芯片。
+                </p>
+              </div>
+              <div class="flash-actions">
+                <button class="text-button" id="prev-card">上一张</button>
+                <button class="text-button primary" id="next-card">下一张</button>
+              </div>
+            </article>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" aria-labelledby="route-title">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Map</div>
+            <h2 id="route-title">芯片新闻理解地图</h2>
+          </div>
+          <p>遇到一条芯片新闻时，先判断它落在哪个模块，再回到术语卡片里补齐关键概念。</p>
+        </div>
+        <div class="route">
+          <article class="day">
+            <div class="num">COMPUTE</div>
+            <strong>AI 算力 / GPU</strong>
+            <span>大模型为什么需要并行计算，高端 GPU 为什么稀缺。</span>
+          </article>
+          <article class="day">
+            <div class="num">ECOSYSTEM</div>
+            <strong>CUDA / 软件生态</strong>
+            <span>英伟达强不只强在芯片。</span>
+          </article>
+          <article class="day">
+            <div class="num">MEMORY</div>
+            <strong>HBM / 显存带宽</strong>
+            <span>算得快，还要喂得上数据。</span>
+          </article>
+          <article class="day">
+            <div class="num">PROCESS</div>
+            <strong>制程 / 晶体管</strong>
+            <span>先进制程为什么会变成国家级能力。</span>
+          </article>
+          <article class="day">
+            <div class="num">FOUNDRY</div>
+            <strong>台积电 / 晶圆代工</strong>
+            <span>设计和制造为什么可以分离。</span>
+          </article>
+          <article class="day">
+            <div class="num">PACKAGING</div>
+            <strong>先进封装 / CoWoS</strong>
+            <span>单颗芯片不够，组合方式也关键。</span>
+          </article>
+          <article class="day">
+            <div class="num">SUPPLY</div>
+            <strong>良率 / 产能</strong>
+            <span>能做出来和能稳定量产是两回事。</span>
+          </article>
+          <article class="day">
+            <div class="num">TOOLS</div>
+            <strong>光刻机 / EDA</strong>
+            <span>上游工具决定了制造和设计上限。</span>
+          </article>
+          <article class="day">
+            <div class="num">POLICY</div>
+            <strong>出口管制 / 实体清单</strong>
+            <span>管制规则会影响产品、设备、软件和客户信心。</span>
+          </article>
+          <article class="day">
+            <div class="num">WORKLOAD</div>
+            <strong>训练 / 推理</strong>
+            <span>大模型不同阶段需要不同算力结构。</span>
+          </article>
+          <article class="day">
+            <div class="num">LOCALIZATION</div>
+            <strong>国产 GPU / 替代</strong>
+            <span>差距要拆成硬件、软件、客户迁移。</span>
+          </article>
+          <article class="day">
+            <div class="num">CLUSTER</div>
+            <strong>互联 / 数据中心</strong>
+            <span>AI 集群不是买很多卡堆起来就行。</span>
+          </article>
+          <article class="day">
+            <div class="num">GEOPOLITICS</div>
+            <strong>台海 / 供应链风险</strong>
+            <span>地缘政治为什么会影响芯片价格和供给。</span>
+          </article>
+          <article class="day">
+            <div class="num">BUSINESS</div>
+            <strong>Fabless / IDM / Foundry</strong>
+            <span>用商业模式看懂半导体公司的分工。</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="terms-title">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Glossary</div>
+            <h2 id="terms-title">术语卡片</h2>
+          </div>
+          <p>每张卡片保留“能看懂新闻”的解释、它为什么重要，以及常见误解。后续你可以继续增加术语和自己的理解。</p>
+        </div>
+        <div class="empty" id="empty">没有匹配的术语。换一个关键词，或者切回“全部”。</div>
+        <div class="term-grid" id="term-grid"></div>
+      </section>
+
+      <section class="section" aria-labelledby="questions-title">
+        <div class="section-head">
+          <div>
+            <div class="kicker">Questions</div>
+            <h2 id="questions-title">把术语挂到问题上</h2>
+          </div>
+          <p>输出观点时，先选一个具体问题，再用术语解释它。</p>
+        </div>
+        <div class="question-wall">
+          <article class="question-card">
+            <h3>四个主问题</h3>
+            <ul class="question-list">
+              <li>国产 GPU 到底和英伟达差在哪里？是芯片、制造、内存、软件生态，还是客户迁移？</li>
+              <li>美国卡中国芯片时，真正想卡住的是产品、设备、人才，还是未来的数据中心能力？</li>
+              <li>台积电为什么既是商业公司，也是全球科技供应链的关键变量？</li>
+              <li>AI 训练和推理需求变化，会怎样影响 GPU、HBM、先进封装和数据中心？</li>
+            </ul>
+          </article>
+          <article class="output-card">
+            <h3>观点草稿</h3>
+            <textarea id="weekly-note">1. 我的当前理解：GPU 的壁垒不只在算得快，还包括 CUDA、HBM、封装和数据中心生态。
+2. 我还没搞懂的是：国产 GPU 的软件生态到底卡在哪一层。
+3. 接下来阅读芯片新闻时，我要重点观察：英伟达、台积电、HBM、先进封装之间的关系。</textarea>
+          </article>
+        </div>
+      </section>
+
+      <section class="comments" aria-labelledby="comments-title">
+        <h2 id="comments-title">评论</h2>
+        <p>欢迎补充术语、提问，或留下你读芯片新闻时卡住的概念。评论需要登录 GitHub。</p>
+        <script
+          src="https://utteranc.es/client.js"
+          repo="gsmtoday0329/gsmtoday0329.github.io"
+          issue-term="pathname"
+          label="comment"
+          theme="github-light"
+          crossorigin="anonymous"
+          async>
+        </script>
+      </section>
+
+      <footer>
+        作为个人芯片新闻术语表继续迭代：补术语、补问题，也补自己暂时讲不清的地方。
+      </footer>
+    </main>
+
+    <script>
+      const terms = [
+        {
+          term: "AI 算力",
+          category: "compute",
+          summary: "支撑大模型训练和推理的计算能力，通常由 GPU、加速卡、网络、存储和数据中心共同提供。",
+          why: "它决定模型能否训练得起、推理能否便宜、产品能否规模化。",
+          trap: "不要把算力只理解成“买几张 GPU”。集群、供电、网络和调度同样重要。"
+        },
+        {
+          term: "GPU",
+          category: "compute",
+          summary: "图形处理器，擅长并行计算。AI 训练和推理需要大量矩阵运算，所以 GPU 成为核心算力芯片。",
+          why: "理解 GPU，才能理解英伟达为什么强、国产替代为什么难。",
+          trap: "GPU 不是唯一 AI 芯片，但它有最成熟的软件生态和开发者习惯。"
+        },
+        {
+          term: "CUDA",
+          category: "ecosystem",
+          summary: "英伟达的软件开发平台，让开发者更容易调用 GPU 做通用计算和 AI 任务。",
+          why: "它把硬件优势变成生态壁垒，让客户迁移到其他 GPU 的成本变高。",
+          trap: "国产 GPU 追赶不只是性能对标，还要让现有模型、框架和工具链能顺利迁移。"
+        },
+        {
+          term: "软件生态",
+          category: "ecosystem",
+          summary: "围绕芯片形成的编译器、驱动、框架适配、开发工具、模型库和工程经验。",
+          why: "客户买的是可用能力，不是纸面参数。生态越成熟，试错成本越低。",
+          trap: "不要只看芯片峰值算力。很多落地问题出在适配、稳定性和工程工具上。"
+        },
+        {
+          term: "HBM",
+          category: "compute",
+          summary: "高带宽内存，通常和高端 GPU 一起封装，负责快速给计算芯片喂数据。",
+          why: "大模型计算很容易被数据搬运卡住，HBM 是 AI 芯片性能和成本的关键部件。",
+          trap: "HBM 不是普通内存的简单升级，它和封装、供应链、产能强相关。"
+        },
+        {
+          term: "显存带宽",
+          category: "compute",
+          summary: "单位时间内 GPU 能从显存读取或写入多少数据。",
+          why: "很多 AI 任务的瓶颈会出在数据供给，带宽会限制真实吞吐。",
+          trap: "显存容量和显存带宽不是一回事；一个管放多少，一个管拿多快。"
+        },
+        {
+          term: "制程",
+          category: "manufacturing",
+          summary: "芯片制造工艺节点的通俗说法，常见表达包括 7nm、5nm、3nm。",
+          why: "先进制程通常意味着更高性能、更低功耗和更高晶体管密度。",
+          trap: "数字不是绝对物理尺寸，也不能单独代表芯片最终能力。"
+        },
+        {
+          term: "晶体管",
+          category: "manufacturing",
+          summary: "芯片里最基础的开关单元。芯片性能提升，本质上和晶体管数量、结构、功耗控制有关。",
+          why: "它是理解摩尔定律、先进制程和芯片复杂度的基础概念。",
+          trap: "晶体管越多不必然越好，还要看架构、功耗、散热和软件是否用得上。"
+        },
+        {
+          term: "晶圆代工",
+          category: "manufacturing",
+          summary: "芯片公司设计芯片，代工厂负责制造。台积电是全球最关键的先进制程代工厂之一。",
+          why: "理解代工模式，才能理解为什么很多芯片公司很强但不自己建厂。",
+          trap: "设计能力和制造能力是两种不同能力，不能混为一谈。"
+        },
+        {
+          term: "台积电",
+          category: "manufacturing",
+          summary: "全球领先的晶圆代工厂，承担大量先进芯片制造任务。",
+          why: "它连接了苹果、英伟达、AMD、高通等公司，也牵动中美科技竞争和台海风险。",
+          trap: "台积电不是普通供应商，它是先进制程产能和工艺经验的集中点。"
+        },
+        {
+          term: "先进封装",
+          category: "manufacturing",
+          summary: "把多个芯片、内存或模块以更高效方式组合起来，提升性能、带宽和集成度。",
+          why: "当单纯缩小制程越来越难，封装成为继续提升 AI 芯片能力的重要路径。",
+          trap: "封装不是芯片做完后的低端步骤，高端封装已经成为核心竞争力。"
+        },
+        {
+          term: "CoWoS",
+          category: "manufacturing",
+          summary: "台积电的一类先进封装技术，常用于把高性能计算芯片和 HBM 组合在一起。",
+          why: "AI GPU 需求爆发时，CoWoS 产能会直接影响高端 GPU 供给。",
+          trap: "英伟达 GPU 缺货不一定只缺芯片，也可能卡在 HBM 或先进封装产能。"
+        },
+        {
+          term: "良率",
+          category: "manufacturing",
+          summary: "生产出来的芯片里，有多少比例是合格可用的。",
+          why: "良率决定成本和量产能力。能做出样品，不等于能便宜稳定地大规模供货。",
+          trap: "发布芯片和商业化供货之间，往往隔着良率、产能和客户验证。"
+        },
+        {
+          term: "产能",
+          category: "manufacturing",
+          summary: "一段时间内能生产多少芯片、封装多少模块或交付多少算力卡。",
+          why: "AI 芯片竞争里，谁能稳定拿到先进制程、HBM 和封装产能，谁就更有交付优势。",
+          trap: "产能不是短期想扩就能扩，设备、工艺、人才和供应链都需要时间。"
+        },
+        {
+          term: "光刻机",
+          category: "manufacturing",
+          summary: "芯片制造中把电路图案转移到晶圆上的关键设备。",
+          why: "先进光刻设备是先进制程的重要门槛，也是出口管制的核心关注点。",
+          trap: "光刻机很重要，但不是唯一瓶颈；材料、刻蚀、检测、工艺整合也关键。"
+        },
+        {
+          term: "EDA",
+          category: "ecosystem",
+          summary: "电子设计自动化工具，用于芯片设计、验证、仿真和版图实现。",
+          why: "没有成熟 EDA，复杂芯片很难高效设计和验证。",
+          trap: "EDA 不是普通画图软件，它沉淀了大量工程规则、工艺适配和行业经验。"
+        },
+        {
+          term: "出口管制",
+          category: "policy",
+          summary: "国家通过规则限制特定产品、技术、设备或服务向某些地区或实体出口。",
+          why: "中美芯片竞争里，出口管制会影响 GPU、制造设备、EDA、先进制程和人才流动。",
+          trap: "它往往会限制整条能力链的升级速度。"
+        },
+        {
+          term: "实体清单",
+          category: "policy",
+          summary: "美国出口管制体系中的名单机制，被列入后获取美国技术或产品会受到限制。",
+          why: "很多中国科技公司、研究机构和芯片企业的发展路径会被这个名单影响。",
+          trap: "进清单不等于公司立刻停摆，但融资、采购、客户信心和研发路线都会受冲击。"
+        },
+        {
+          term: "训练",
+          category: "compute",
+          summary: "用大量数据调整模型参数，让模型学会能力的过程。",
+          why: "训练通常消耗巨大算力，是大模型公司、云厂商和芯片公司竞争的核心场景。",
+          trap: "训练强不等于产品强，模型还需要推理成本、数据、应用和分发。"
+        },
+        {
+          term: "推理",
+          category: "compute",
+          summary: "模型训练好之后，响应用户请求、生成文本或图像的过程。",
+          why: "AI 应用普及后，推理成本会直接影响商业模式和用户体验。",
+          trap: "推理不一定永远依赖最贵 GPU，成本优化会催生不同芯片和部署方案。"
+        },
+        {
+          term: "国产 GPU",
+          category: "compute",
+          summary: "中国本土公司设计或供应的 GPU / AI 加速芯片，目标是替代部分海外高端算力。",
+          why: "它是理解国产替代、中美科技限制和国内 AI 基础设施的重要入口。",
+          trap: "差距不能只看一个跑分，要拆成制造、内存、封装、软件、客户验证和供货能力。"
+        },
+        {
+          term: "国产替代",
+          category: "policy",
+          summary: "用本土供应链、产品或技术替代海外依赖，降低被限制或断供的风险。",
+          why: "在芯片领域，它既是产业机会，也是长期工程难题。",
+          trap: "替代不是“有国产产品”就结束，还要看性能、成本、稳定性和生态迁移。"
+        },
+        {
+          term: "互联",
+          category: "compute",
+          summary: "芯片、服务器和数据中心节点之间传输数据的连接能力。",
+          why: "大模型训练需要很多 GPU 协同工作，互联能力影响集群效率。",
+          trap: "多卡堆叠不等于线性变强，通信瓶颈会吞掉大量算力。"
+        },
+        {
+          term: "数据中心",
+          category: "compute",
+          summary: "集中部署服务器、网络、存储、电力和冷却系统的基础设施。",
+          why: "AI 竞争逐渐从单颗芯片扩展到整个数据中心系统能力。",
+          trap: "数据中心不是机房加服务器，电力、散热、调度、网络和运维都会限制规模。"
+        },
+        {
+          term: "台海供应链风险",
+          category: "policy",
+          summary: "由于台湾在先进芯片制造中位置关键，地缘政治变化可能影响全球科技供应链。",
+          why: "它解释了为什么台湾问题会影响 AI、手机、汽车、云计算等行业。",
+          trap: "这不是单纯政治话题，它会传导到产能、库存、价格和企业供应链布局。"
+        },
+        {
+          term: "Fabless / IDM / Foundry",
+          category: "ecosystem",
+          summary: "Fabless 只设计不制造，Foundry 专门代工制造，IDM 则设计和制造都做。",
+          why: "用这三个词，可以快速看懂英伟达、台积电、英特尔、三星的商业分工。",
+          trap: "公司模式会变化，不能只靠标签判断能力；关键看它控制了哪一段价值链。"
+        }
+      ];
+
+      const categoryNames = {
+        compute: "算力",
+        manufacturing: "制造",
+        ecosystem: "生态",
+        policy: "管制"
+      };
+
+      const grid = document.querySelector("#term-grid");
+      const empty = document.querySelector("#empty");
+      const search = document.querySelector("#search");
+      const clearSearch = document.querySelector("#clear-search");
+      const filterButtons = [...document.querySelectorAll(".filter")];
+      const flashTerm = document.querySelector("#flash-term");
+      const flashText = document.querySelector("#flash-text");
+      const flashCategory = document.querySelector("#flash-category");
+      const cardCount = document.querySelector("#card-count");
+      let activeFilter = "all";
+      let activeTerms = [...terms];
+      let activeIndex = 0;
+
+      function renderTerms() {
+        const keyword = search.value.trim().toLowerCase();
+        activeTerms = terms.filter((item) => {
+          const matchesFilter = activeFilter === "all" || item.category === activeFilter;
+          const haystack = `${item.term} ${item.summary} ${item.why} ${item.trap} ${categoryNames[item.category]}`.toLowerCase();
+          return matchesFilter && (!keyword || haystack.includes(keyword));
+        });
+
+        grid.innerHTML = activeTerms
+          .map(
+            (item) => `
+              <article class="term-card">
+                <div class="term-top">
+                  <h3>${item.term}</h3>
+                  <span class="tag">${categoryNames[item.category]}</span>
+                </div>
+                <p>${item.summary}</p>
+                <dl>
+                  <div>
+                    <dt>为什么重要</dt>
+                    <dd>${item.why}</dd>
+                  </div>
+                  <div>
+                    <dt>容易误解</dt>
+                    <dd>${item.trap}</dd>
+                  </div>
+                </dl>
+              </article>
+            `
+          )
+          .join("");
+
+        empty.style.display = activeTerms.length ? "none" : "block";
+        activeIndex = 0;
+        renderFlashcard();
+      }
+
+      function renderFlashcard() {
+        if (!activeTerms.length) {
+          flashTerm.textContent = "没有匹配";
+          flashText.textContent = "换一个搜索词或分类。";
+          flashCategory.textContent = "Empty";
+          cardCount.textContent = "00 / 00";
+          return;
+        }
+
+        const item = activeTerms[activeIndex];
+        flashTerm.textContent = item.term;
+        flashText.textContent = item.summary;
+        flashCategory.textContent = categoryNames[item.category];
+        cardCount.textContent = `${String(activeIndex + 1).padStart(2, "0")} / ${String(activeTerms.length).padStart(2, "0")}`;
+      }
+
+      document.querySelector("#next-card").addEventListener("click", () => {
+        if (!activeTerms.length) return;
+        activeIndex = (activeIndex + 1) % activeTerms.length;
+        renderFlashcard();
+      });
+
+      document.querySelector("#prev-card").addEventListener("click", () => {
+        if (!activeTerms.length) return;
+        activeIndex = (activeIndex - 1 + activeTerms.length) % activeTerms.length;
+        renderFlashcard();
+      });
+
+      search.addEventListener("input", renderTerms);
+      clearSearch.addEventListener("click", () => {
+        search.value = "";
+        search.focus();
+        renderTerms();
+      });
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter;
+          filterButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          renderTerms();
+        });
+      });
+
+      renderTerms();
+    </script>
+  </body>
+</html>
