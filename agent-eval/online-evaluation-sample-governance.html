@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>如何把生产流量转化为评测资产 - 武清南路</title>
+    <meta
+      name="description"
+      content="业务在线评测的样本治理：如何从海量生产数据中筛选、抽样、标注和沉淀有评测价值的样本。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#articles">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell post-with-toc sample-governance-post">
+      <nav class="post-toc" aria-label="文章目录">
+        <strong>目录</strong>
+        <a href="#asset">从线上流量打分到评测资产建设</a>
+        <a href="#online-scoring">第一层：在线采样与条件过滤</a>
+        <a href="#human-review">第二层：人工确认与问题归因</a>
+        <a href="#dataset-return">第三层：回流为离线数据集</a>
+        <a href="#platform-cases">附录：平台案例</a>
+        <div class="post-toc-subgroup" aria-label="平台案例">
+          <a href="#braintrust">Braintrust</a>
+          <a href="#langsmith">LangSmith</a>
+          <a href="#arize">Arize</a>
+        </div>
+        <a href="#faq">FAQ</a>
+        <a href="#conclusion">结论</a>
+      </nav>
+
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-15">July 15, 2026</time>
+            <span>Agent 评测</span>
+            <span>在线评测</span>
+          </p>
+          <h1>如何把生产流量转化为评测资产</h1>
+        </header>
+
+        <p>
+          LLM / Agent 应用上线后，很多团队会遇到一个尴尬的局面：evaluator 每天产出几千条评分结果，人工复核人员不知道该从哪里看起；线上低分样本直接灌进离线评测集，指标噪声越来越大；修了一个 bug 想跑回归，却发现没有干净的、能复用的历史样本。
+        </p>
+
+        <p>
+          这些问题的共同根源在于打分之后缺少一套筛选、确认和沉淀的流程。生产环境里的 traces 数量巨大、质量参差、很多没有标准答案，不能直接等同于评测集。
+        </p>
+
+        <p class="sequence-note">
+          核心问题：如何从海量生产流量中筛出值得评测的样本，并让它们变成可重复执行的离线回归用例。
+        </p>
+
+        <p>
+          这可以称为 <strong>业务在线评测的样本治理</strong>——关注的是评分对象的选择和管理，而非评分方法本身。
+        </p>
+
+        <section id="asset">
+          <h2>从“线上流量打分”到“评测资产建设”</h2>
+          <p>
+            传统模型评测更关注固定测试集上的准确率、得分和排行榜。Agent 和 LLM 应用进入真实业务后，评测对象变了：从模型的一次回答，变成完整的应用行为和工作流。
+          </p>
+
+          <p>一个线上 Agent trace 里可能包含：</p>
+
+          <ul>
+            <li>用户输入和多轮上下文</li>
+            <li>意图识别和路由结果</li>
+            <li>RAG 检索结果</li>
+            <li>工具调用、参数和返回值</li>
+            <li>中间推理或规划步骤</li>
+            <li>最终回复</li>
+            <li>用户反馈、业务结果、失败状态</li>
+            <li>延迟、成本、token、错误和重试</li>
+          </ul>
+
+          <p>
+            这些 production traces 本身就是高价值的质量信号。但它们不能简单等同于评测集。在线流量要经过筛选、清洗、标注和版本化，才能沉淀为可复用的评测资产。
+          </p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/online-evaluation-sample-governance-illustrations/01-production-trace.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="生产 trace 经过筛选和清洗，去除噪声后变成可复用的评测资产。"
+            />
+          </figure>
+
+          <p>在进入三层筛选之前，先把五个动作分开。它们发生在不同时间，也解决不同问题：</p>
+
+          <ol>
+            <li><strong>全量采集</strong>：尽可能保留生产环境中的 trace、执行记录和多轮会话，但不代表每条数据都要评分。</li>
+            <li><strong>选择性在线评分</strong>：在评分前通过抽样和条件过滤，选择需要 evaluator 判断的样本。</li>
+            <li><strong>进入人工队列</strong>：在评分或业务反馈产生后，将低分、负反馈、异常和高风险样本列为候选问题。</li>
+            <li><strong>人工复核</strong>：确认问题是否成立，补充期望行为和失败原因，并交给开发修复。</li>
+            <li><strong>回流评测资产</strong>：只把确认有效、可复现且值得长期保留的样本加入离线评测集。</li>
+          </ol>
+        </section>
+
+        <section id="online-scoring">
+          <h2>第一层：哪些线上样本要被在线评分</h2>
+          <p>
+            在线评分通常不会全量覆盖所有生产流量，原因很直接：LLM-as-judge 有成本，人工复核有成本，评测系统本身也会带来计算开销。
+          </p>
+
+          <p>
+            所以平台通常先做两类筛选。
+          </p>
+
+          <p>
+            第一类是 <strong>抽样</strong>。例如对高流量业务只抽取 1%、5% 或 10% 的 trace 做在线评分；对低流量但高风险的业务，可以提高抽样比例，甚至全量评测。Braintrust、LangSmith、Arize 都支持类似 sampling rate 的机制。
+          </p>
+
+          <p>
+            第二类是 <strong>条件过滤</strong>。也就是只评特定类型的线上样本，例如：
+          </p>
+
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>筛选维度</th>
+                  <th>示例</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>业务场景</td>
+                  <td>只评退款、售后、改价、发券等关键场景</td>
+                </tr>
+                <tr>
+                  <td>模型版本</td>
+                  <td>只评灰度模型或新 prompt 版本</td>
+                </tr>
+                <tr>
+                  <td>用户类型</td>
+                  <td>只评高价值客户、企业客户、新用户</td>
+                </tr>
+                <tr>
+                  <td>工具调用</td>
+                  <td>只评调用了支付、订单、库存、客服转人工等工具的 trace</td>
+                </tr>
+                <tr>
+                  <td>异常状态</td>
+                  <td>只评 error、timeout、retry、空输出、格式错误</td>
+                </tr>
+                <tr>
+                  <td>反馈信号</td>
+                  <td>只评用户点踩、投诉、重复追问、放弃会话的样本</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            三个平台的筛选侧重点可以简化成这样：
+          </p>
+
+          <div class="table-wrap platform-filter-table-wrap">
+            <table class="platform-filter-table">
+              <thead>
+                <tr>
+                  <th>平台</th>
+                  <th>主要筛选维度</th>
+                  <th>评分前用途</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>LangSmith</td>
+                  <td>run、metadata、feedback、tool call、error</td>
+                  <td>按运行属性和异常信号选择要评分的 run</td>
+                </tr>
+                <tr>
+                  <td>Braintrust</td>
+                  <td>sampling rate、SQL filter、metadata、业务场景</td>
+                  <td>控制 online scoring 的覆盖范围</td>
+                </tr>
+                <tr>
+                  <td>Arize</td>
+                  <td>span kind、status、latency、model、metadata、trace pattern</td>
+                  <td>选择需要评分的 trace 或 span</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            这说明在线评测的第一步是用规则把评测资源集中在更有信息量的流量上，而非全量打分。
+          </p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/online-evaluation-sample-governance-illustrations/02-sampling-filtering.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="大量生产流量先按抽样率采样，再通过风险、反馈和业务条件过滤，进入集中评测。"
+            />
+          </figure>
+        </section>
+
+        <section id="human-review">
+          <h2>第二层：人工确认问题并完成归因</h2>
+          <p>
+            第一层筛选出来的只是候选问题，不能直接进入离线评测集。在线 evaluator 可能误判，用户反馈也可能缺少上下文，因此还需要人工确认问题是否真的存在。
+          </p>
+
+          <p>
+            本文把确认问题、补充期望行为和完成失败归因的环节统称为<strong>人工复核</strong>。人工标注只是其中填写标签的动作。
+          </p>
+
+          <p>下面几类候选样本应优先进入人工复核：</p>
+
+          <ul>
+            <li>evaluator 判为低分或高风险的样本。</li>
+            <li>用户点踩、投诉、重复追问或人工接管的样本。</li>
+            <li>工具调用失败、异常恢复失败，或成本和延迟明显异常的样本。</li>
+            <li>新版本灰度期间的退化样本，以及聚类后发现的代表性失败模式。</li>
+          </ul>
+
+          <h3>人工复核具体做什么</h3>
+
+          <ul>
+            <li><strong>确认问题是否成立</strong>：结合原始输入、trace、自动评分和用户反馈，判断是真问题、误报，还是证据不足。</li>
+            <li><strong>补充期望行为</strong>：说明业务上可以接受什么、不能接受什么，避免只有“低分”而没有明确判断标准。</li>
+            <li><strong>完成归因和交接</strong>：把确认的问题交给 Agent 开发定位，说明问题发生在路由、检索、工具调用、模型回复还是异常处理。</li>
+          </ul>
+
+          <p>
+            如果确认是误报，评测方要调整 evaluator 或筛选规则；如果证据不足，Agent 开发需要补充 trace、工具返回或版本信息；如果确认是真问题，业务方补充期望行为，Agent 开发定位根因并完成修复。
+          </p>
+
+          <p class="sequence-note">候选样本 → 人工确认 → 补充期望行为 → 定位并修复 → 交给第三层判断是否长期保留</p>
+
+          <p>
+            修复后的样本再交给第三层判断是否值得长期保留。第二层的核心价值是：<strong>阻止误报、证据不足和不可复现的样本直接进入离线评测集</strong>。
+          </p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/online-evaluation-sample-governance-illustrations/03-human-review.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="低分样本进入有状态的人工复核队列，人工确认真实问题并隔离误报噪声。"
+            />
+          </figure>
+        </section>
+
+        <section id="dataset-return">
+          <h2>第三层：哪些样本要回流为离线评测集</h2>
+          <p>
+            第三层处理的是经过人工复核、准备长期保留的候选样本。不是所有候选样本都要进入离线评测集，一个样本要成为评测资产，至少应该满足下面几个条件：
+          </p>
+
+          <ul>
+            <li>评测对象和判断标准明确，能够说明什么结果算通过、什么结果算失败。</li>
+            <li>必要上下文完整，能够稳定复现问题或成功路径。</li>
+            <li>能够覆盖高频场景、关键路径、高风险动作、边界情况或系统性缺陷。</li>
+            <li>能够检验一次修复是否有效，或者防止后续版本破坏已有能力。</li>
+            <li>已经完成必要的脱敏、去重和分类，不会把重复样本或隐私数据带入评测集。</li>
+          </ul>
+
+          <p>
+            满足这些准入条件后，回流的评测资产通常分为几类：
+          </p>
+
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>样本类型</th>
+                  <th>价值</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>代表性失败样本</td>
+                  <td>防止已知问题复发</td>
+                </tr>
+                <tr>
+                  <td>高频业务样本</td>
+                  <td>保证主路径质量</td>
+                </tr>
+                <tr>
+                  <td>边界样本</td>
+                  <td>覆盖歧义、缺参、越界、安全风险</td>
+                </tr>
+                <tr>
+                  <td>工具调用样本</td>
+                  <td>验证工具选择、参数、调用顺序和异常恢复</td>
+                </tr>
+                <tr>
+                  <td>多轮会话样本</td>
+                  <td>验证上下文保持、澄清和任务闭环</td>
+                </tr>
+                <tr>
+                  <td>高质量成功样本</td>
+                  <td>作为 golden case，防止修复时破坏已有正确行为</td>
+                </tr>
+                <tr>
+                  <td>灰度退化样本</td>
+                  <td>用于新旧版本差异回归</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            这也是评测资产和 raw production trace 的区别。Raw trace 是生产记录，评测资产是经过筛选、清洗、标注、脱敏、去重和版本化管理后的可复用样本。评测资产的粒度不固定——可以是一条完整 trace，也可以是其中的某个 span（如一次工具调用、一次检索）或一组关联 spans，取决于评测目标是端到端结果还是过程中的某个环节。
+          </p>
+
+          <h3>评测资产回流后怎么用</h3>
+
+          <p>
+            评测资产回流到离线评测集之后，核心问题是：评测集里每条用例长什么样，离线回归时怎么跑、怎么判。
+          </p>
+
+          <h4>评测用例的结构</h4>
+
+          <p>
+            一条 Agent 评测用例 = <strong>输入 + rubric list</strong>。
+          </p>
+
+          <ul>
+            <li><strong>输入</strong>：agent 要跑什么场景。通常是用户 query + 必要的上下文（对话历史、业务状态等）。</li>
+            <li><strong>Rubric list</strong>：怎么判断 agent 跑得对不对。一组检查条件，描述期望的行为或约束。</li>
+          </ul>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/online-evaluation-sample-governance-illustrations/04-input-rubric.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="回流评测集的样本由输入和 rubric list 组成，用行为约束判断 Agent 输出，而不是逐字匹配参考答案。"
+            />
+          </figure>
+
+          <p>
+            这跟传统 NLP 评测集的结构不同。传统做法是 (input, expected_output)——每条样本带一段参考答案文本，评测时做匹配或相似度比较。Agent 评测用 rubric 替代固定参考答案，原因是：agent 输出很长，同一个正确回答有多种合理表述，过程评测关心的是行为模式而非措辞。
+          </p>
+
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table evaluation-structure-table">
+              <thead>
+                <tr>
+                  <th>传统评测集</th>
+                  <th>Agent 评测集</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>expected_output: “您的订单预计 7 月 22 日送达”</td>
+                  <td>rubric: “回复是否包含具体到达日期？是否基于物流工具返回的数据？”</td>
+                </tr>
+                <tr>
+                  <td>expected_tool: refund</td>
+                  <td>rubric: “是否调用了 refund 工具？参数是否包含正确的订单 ID？”</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            评测集里也可以附一条 golden answer 作为人工复核时的参考，但它是辅助信息，不是评测的核心判断依据。
+          </p>
+
+          <h4>离线回归怎么跑</h4>
+
+          <p>
+            按评测粒度分为端到端和过程评测，区别在于 rubric 检查的对象不同。
+          </p>
+
+          <p><strong>端到端评测</strong>：agent 跑完整链路，rubric 只看最终回复。不打开 trace，不关心中间做了什么——黑盒视角。</p>
+
+          <p><strong>过程评测</strong>：打开 trace，rubric 检查执行过程中的决策和行为。有两种跑法——只跑单步决策（检查某个决策点），或跑完整链路但用 rubric 逐步检查 trace 中的关键节点。</p>
+
+          <h4>完整案例：退款工具超时如何完成闭环</h4>
+
+          <p>
+            下面的规则表达式、字段名和状态值只用于说明流程，不是统一的数据规范。实际使用的阈值和处理时限也应根据业务风险、线上流量和 evaluator 校准结果确定，不能直接当作通用默认值。
+          </p>
+
+          <ol>
+            <li><strong>触发</strong>：退款场景出现工具超时，示例规则 <code>scene = refund AND tool_timeout = true</code> 命中后创建复核项，并将 <code>review_status</code> 记为 <code>pending</code>。</li>
+            <li><strong>复核</strong>：业务负责人确认 Agent 不应编造退款成功结果，将 <code>human_label</code> 记为 <code>confirmed_issue</code>，并补充期望行为：明确说明处理失败，引导用户重试或转人工。</li>
+            <li><strong>修复</strong>：Agent 开发确认根因是超时后没有兜底处理，示例记录为 <code>root_cause = no_timeout_fallback</code>，完成修复后运行离线回归。</li>
+            <li><strong>入库</strong>：评测负责人完成脱敏、去重和可复现性检查，将输入、必要上下文和 rubric 加入评测集，示例资产版本记为 <code>asset_version = refund-regression-v1</code>。</li>
+            <li><strong>验证</strong>：<code>regression_result = pass</code> 后再上线新版本；上线后继续检查同类退款 trace 是否仍因工具超时触发复核规则，确认问题没有再次出现。</li>
+          </ol>
+
+          <p class="sequence-note">工具超时 → 人工确认 → 补充期望行为 → 修复异常兜底 → 离线回归 → 上线后继续监控</p>
+
+          <h4>不同评测粒度的例子</h4>
+
+          <p><strong>端到端评测</strong></p>
+
+          <ol>
+            <li><strong>线上发现</strong>：agent 回复物流问题时语气生硬、遗漏了用户追问的关键信息。</li>
+            <li><strong>加入评测集</strong>：
+              <ul>
+                <li>输入：用户消息“我的快递到哪了，怎么还没到”，订单 ID 为 OD-20260715-388</li>
+                <li>Rubric：回复是否包含物流时间信息？语气是否符合客服规范？是否回应了用户的情绪？</li>
+              </ul>
+            </li>
+            <li><strong>离线回归</strong>：新版本 agent 跑完整链路，只看最终回复是否满足 rubric。</li>
+          </ol>
+
+          <p><strong>过程评测（单步决策）</strong></p>
+
+          <ol>
+            <li><strong>线上发现</strong>：agent 在用户说“帮我退掉昨天的订单”时，错误调用了 query_order 而不是 refund。</li>
+            <li><strong>加入评测集</strong>：
+              <ul>
+                <li>输入：用户消息“帮我退掉昨天的订单”；上下文是 agent 到达工具选择这一步时已掌握的信息——意图已识别为退款、订单 ID 已解析为 ORD-20260718-001、用户身份已验证。</li>
+                <li>Rubric：是否调用了 refund 工具？参数是否为 ORD-20260718-001？</li>
+              </ul>
+            </li>
+            <li><strong>离线回归</strong>：只跑到工具选择这一步，用 rubric 检查这一步的输出。</li>
+          </ol>
+
+          <p><strong>过程评测（完整链路 + 逐步检查）</strong></p>
+
+          <p><strong>案例一：物流工具调用</strong></p>
+
+          <ol>
+            <li><strong>线上发现</strong>：agent 在用户问“我的订单什么时候到”时，没有调物流工具就编造了一个到达日期。</li>
+            <li><strong>加入评测集</strong>：
+              <ul>
+                <li>输入：用户消息“我的订单什么时候到”，订单 ID 为 OD-20260715-388</li>
+                <li>Rubric：agent 是否调用了物流查询工具？最终回复是否基于工具返回的结果？回复中的日期是否跟工具返回的数据一致？</li>
+              </ul>
+            </li>
+            <li><strong>离线回归</strong>：agent 跑完整链路，用 rubric 逐步检查 trace——工具调用环节和最终回复环节分别是否符合预期。</li>
+          </ol>
+
+          <p><strong>案例二：RAG 检索与生成</strong></p>
+
+          <ol>
+            <li><strong>线上发现</strong>：RAG 场景中 agent 检索到了正确文档但回复时编造了内容。</li>
+            <li><strong>加入评测集</strong>：
+              <ul>
+                <li>输入：用户消息“我们的退货政策是什么？”</li>
+                <li>Rubric：agent 是否调用了检索工具？检索结果是否包含相关文档？最终回复中的关键事实是否可追溯到检索内容？</li>
+              </ul>
+            </li>
+            <li><strong>离线回归</strong>：agent 跑完整链路，用 rubric 逐步检查检索环节和生成环节。</li>
+          </ol>
+
+          <p>
+            过程评测的价值在于：最终回复可能看起来“正确”，但执行过程有问题（跳过了必要步骤、编造了中间结果）。只有检查过程才能发现这类隐藏缺陷。
+          </p>
+        </section>
+
+        <section id="platform-cases">
+          <h2>附录：平台案例</h2>
+          <p>
+            这里列三个例子，不是为了做产品对比，而是看看前面三层筛选在平台里怎么落地。三者都在做同一件事：线上发现问题，人工确认问题，再把有价值的样本沉淀为可回归的数据集。
+          </p>
+
+          <section id="braintrust" class="platform-case">
+            <h3>Braintrust：online scoring 与 dataset 回流</h3>
+            <p>
+              Braintrust 的公开文档可以对应第一层和第三层：对 production logs / traces 配置 online scoring rule，按抽样率和过滤条件异步打分；再从 production logs、user feedback、topics 中筛选样本进入 dataset。
+            </p>
+
+            <p>常见的回流来源包括：</p>
+
+            <ul>
+              <li>从用户点踩或低评分样本中回流 badcase。</li>
+              <li>从高评分样本中沉淀 golden examples。</li>
+              <li>从 topic clustering 中发现相似失败模式。</li>
+              <li>从低 correctness、低 groundedness 或有人工评论的 trace 中构造回归样本。</li>
+            </ul>
+
+            <p>
+              它说明线上评分结果需要和反馈筛选、dataset 管理接起来，才方便进入后续离线实验。这是一条通用做法，各平台都在做类似的事。
+            </p>
+
+            <p>
+              参考：<a href="https://www.braintrust.dev/docs/evaluate/score-online">Braintrust online scoring</a>、<a href="https://www.braintrust.dev/docs/annotate/datasets/create">Braintrust datasets</a>、<a href="https://www.braintrust.dev/docs/evaluate/best-practices">Braintrust evaluation best practices</a>
+            </p>
+          </section>
+
+          <section id="langsmith" class="platform-case">
+            <h3>LangSmith：annotation queue 连接人工复核</h3>
+            <p>
+              LangSmith 的案例更适合说明第二层如何落地。它把 tracing、filter、automation rules 和 annotation queues 接起来：
+            </p>
+
+            <ul>
+              <li>通过 trace filter 找到特定 run、tool call、metadata、feedback 或异常样本。</li>
+              <li>用 online evaluator 对生产 run 做质量判断。</li>
+              <li>用 automation rules 将低分、负反馈、error runs 送入 annotation queue。</li>
+              <li>人工复核后，将确认有价值的样本加入 dataset，供后续离线实验和回归测试。</li>
+            </ul>
+
+            <p>
+              这里的重点在于低分样本进入人工队列前后都有明确的流转位置。
+            </p>
+
+            <p>
+              参考：<a href="https://docs.langchain.com/langsmith/evaluation-concepts">LangSmith evaluation concepts</a>、<a href="https://docs.langchain.com/langsmith/online-evaluations">LangSmith online evaluations</a>、<a href="https://docs.langchain.com/langsmith/annotation-queues">LangSmith annotation queues</a>、<a href="https://docs.langchain.com/langsmith/rules">LangSmith automation rules</a>
+            </p>
+          </section>
+
+          <section id="arize" class="platform-case">
+            <h3>Arize：用 trace pattern 找过程问题</h3>
+            <p>
+            Arize / Phoenix 更能说明平台为什么要关注 trace 结构。它可以按 span、trace、session 等不同粒度筛选，也可以基于链路模式查询。很多 Agent 问题藏在执行过程中，最终回复一句话看不出来：
+          </p>
+
+            <ul>
+              <li>是否跳过了必要工具，或者工具失败后仍然编造结果。</li>
+              <li>是否 RAG 检索后没有基于证据回答。</li>
+              <li>是否出现多次重试、循环调用或异常延迟。</li>
+              <li>是否某类 tool、retriever 或 API span 的错误率异常。</li>
+            </ul>
+
+            <p>
+              对应的样本筛选可以按 span kind、status、latency、token、model、metadata 和 eval score 进行，再通过 labeling queue 做人工复核，将典型样本、边界样本和已知失败样本构造成 regression / golden datasets。
+            </p>
+
+            <p>
+              这个案例提醒我们，在线评测的样本对象不一定是整段对话，也可能是 trace 中某个值得追查的 span 或一组链路模式。
+            </p>
+
+            <p>
+              参考：<a href="https://arize.com/docs/ax/evaluate/run-evals-on-traces">Arize run online evals on traces</a>、<a href="https://arize.com/docs/ax/improve/build-a-dataset">Arize build a dataset</a>、<a href="https://arize.com/docs/ax/evaluate/labeling-queues">Arize labeling queues</a>、<a href="https://arize.com/docs/ax/observe/tracing/view-and-manage-traces">Arize trace management</a>
+            </p>
+          </section>
+        </section>
+
+        <section id="faq">
+          <h2>FAQ</h2>
+          <h3>为什么不把所有样本都放进标注池，再让人有选择地标注？</h3>
+
+          <p>
+            可以全量采集和保留原始线上数据，但这不意味着所有样本都要评分或进入人工队列。前文已经区分了采集、在线评分、进入人工队列、人工复核和评测资产回流这五个动作。
+          </p>
+
+          <p>
+            如果只是把样本全部铺开，再让人自己挑，人工标注会先遇到几个问题：队列太大，优先级不清楚；重复和低信息量样本很多，容易占用标注时间；不同的人对“什么值得标”理解不同，最后很难保证样本覆盖和标注一致性。
+          </p>
+
+          <p>
+            更合理的做法是先用抽样、规则过滤和自动评分做一轮分层，再把低分、异常、负反馈、高风险、边界和代表性样本送入人工队列。这样可以把人工资源集中到更能反映业务质量的地方。
+          </p>
+
+          <p>
+            低流量、高风险或标注成本可控的场景，也可以考虑更高比例的覆盖，甚至全量评分或全量标注。但这需要先明确评测目标、样本量、标签体系、人力预算和质量要求，不能默认所有业务都采用同一种方式。
+          </p>
+        </section>
+
+        <section id="conclusion">
+          <h2>结论</h2>
+          <p>
+            线上评测至少有两件事：用合适的评分方法判断质量，再从生产流量中筛出有代表性、有风险、可复用的样本。本文不展开前者，重点讨论后者。
+          </p>
+
+          <p>
+            实际落地时，最容易卡住的往往是第二层和第三层之间：低分样本没有进入有状态的人工队列，人工确认后的样本也没有带着失败原因、期望行为和版本信息回流。结果是线上每天都在发现问题，离线评测集却没有持续变好。
+          </p>
+
+          <p>
+            优先级上，不必一开始就追求全量覆盖。先选一个高频或高风险场景，跑通“在线筛选—人工复核—评测资产回流—修复后回归”这条链路；链路稳定后，再逐步扩大样本量、评测维度和业务范围。
+          </p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/online-evaluation-sample-governance-illustrations/05-evaluation-loop.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="生产流量经过筛选抽样、人工复核和资产沉淀后进入修复回归，再把验证结果反馈到线上。"
+            />
+          </figure>
+        </section>
+      </article>
+    </main>
+    <script>
+      const tocLinks = [...document.querySelectorAll(".post-toc a")];
+      const tocSections = tocLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+
+      const tocObserver = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+          if (!visible) return;
+
+          tocLinks.forEach((link) => {
+            link.classList.toggle("is-active", link.getAttribute("href") === `#${visible.target.id}`);
+          });
+        },
+        { rootMargin: "-18% 0px -62% 0px", threshold: [0.15, 0.35, 0.6] }
+      );
+
+      tocSections.forEach((section) => tocObserver.observe(section));
+    </script>
+  </body>
+</html>

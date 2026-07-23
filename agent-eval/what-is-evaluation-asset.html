@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>什么才算 Agent 评测资产 - 武清南路</title>
+    <meta
+      name="description"
+      content="结合 Anthropic、OpenAI、火山引擎 AgentKit、腾讯云和阿里云百炼的公开口径，解释 Agent 评测资产的定义、对象边界、版本生命周期和落地流程。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#agent-eval">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell post-with-toc evaluation-asset-post">
+      <nav class="post-toc" aria-label="文章目录">
+        <strong>目录</strong>
+        <a href="#decision">这个定义会改变什么</a>
+        <a href="#vendors">五家厂商怎样组织评测</a>
+        <a href="#layers">评测资产的三层结构</a>
+        <a href="#definition">推荐定义</a>
+        <a href="#boundaries">哪些对象还不能直接称为资产</a>
+        <a href="#lifecycle">从 trace 到版本化资产</a>
+        <a href="#roles">三个角色怎样分工</a>
+        <a href="#example">一条样本的完整流转</a>
+        <a href="#admission">准入与废弃</a>
+        <a href="#conclusion">结论</a>
+        <a href="#references">参考资料</a>
+      </nav>
+
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-20">July 20, 2026</time>
+            <span>Agent 评测</span>
+            <span>评测资产</span>
+          </p>
+          <h1>什么才算 Agent 评测资产</h1>
+          <p class="lead">
+            在本文查阅的公开文档中，Anthropic、OpenAI、火山引擎 AgentKit、腾讯云和阿里云百炼都未见把“评测资产”定义成统一术语；但它们公开的评测对象可以被放进同一张工程地图：测试数据、判定规则，以及与具体版本关联的运行结果。
+          </p>
+        </header>
+
+        <p>
+          Agent 上线以后，一条 production trace 可能包含用户输入、多轮上下文、路由、检索结果、工具调用、最终回复、用户反馈、业务结果、延迟、成本和错误。这些记录是重要证据，但把它们原样放进一个文件夹，并不会自动得到评测资产。
+        </p>
+
+        <p>
+          原始记录可能带有隐私信息，缺少明确的评测目标，也可能无法复现当时的知识、工具和外部环境。真正困难的不是“有没有数据”，而是怎样把一次性的生产证据加工成下一次模型、Prompt 或工具变化时仍然可信的质量基准。
+        </p>
+
+        <section id="decision">
+          <h2>这个定义会改变什么</h2>
+
+          <p>
+            区分 trace、候选样本和正式资产，不只是概念洁癖。它会直接改变团队对数据存储、人工队列、修复交接和发布门禁的设计。如果把生产记录直接当作评测集，线上低分样本会不断灌入离线数据，重复数据越来越多，标签彼此冲突，过几周后也没人能解释某条样本为什么存在。
+          </p>
+
+          <p>一个可执行的对象划分是：</p>
+
+          <ul>
+            <li>原始 trace 保留“当时发生了什么”的证据。</li>
+            <li>候选样本承载抽样、自动评分和人工复核。</li>
+            <li>评测样本定义一次可以独立执行和判定的测试。</li>
+            <li>版本化评测集组织某次发布需要重复运行的一组样本。</li>
+            <li>评估器和实验结果分别保存“怎样判断”与“这次判断出了什么”。</li>
+          </ul>
+
+          <p class="sequence-note">Production trace 是原材料，eval item 是加工后的标准件，versioned dataset 是按用途组织并冻结的资产集合。</p>
+
+          <p>
+            这套划分也把五个经常混在一起的动作拆开了：全量采集、在线评分、进入人工队列、人工标注和回流评测集。全量采集不意味着全量评分；评分低不等于已经完成标注；人工确认是真问题，也不等于它值得长期进入回归集。
+          </p>
+        </section>
+
+        <section id="vendors">
+          <h2>五家厂商怎样组织评测</h2>
+
+          <p>
+            截至 2026 年 7 月 20 日，本文查阅的五家厂商公开页面未见统一的“评测资产”产品对象名。它们更常使用 dataset、test case、grader、评测集、评估器、评测任务和 experiment。真正值得比较的不是名词是否一样，而是数据、判定方法和运行结果怎样被保存与复用。
+          </p>
+
+          <div class="table-wrap">
+            <table aria-label="五家厂商公开评测对象对比">
+              <thead>
+                <tr>
+                  <th scope="col">厂商</th>
+                  <th scope="col">核心对象</th>
+                  <th scope="col">最接近资产的公开口径</th>
+                  <th scope="col">公开能力边界</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Anthropic</td>
+                  <td>Success criteria、test cases、graders、prompt versions</td>
+                  <td>围绕真实任务和边界情况组织测试用例，并反复比较 Prompt</td>
+                  <td>本次查阅的公开文档重点是评测设计，未把版本血缘治理定义成统一对象</td>
+                </tr>
+                <tr>
+                  <td>OpenAI</td>
+                  <td>Datasets、annotations、graders；Evals API（过渡期）的 Eval / Eval Run</td>
+                  <td>Dataset 承载持续积累的数据与反馈；Eval 组合数据 schema 和 graders</td>
+                  <td>Evals platform 已宣布弃用；官方将 Datasets 作为快速迭代入口，Evals API 暂保留给外部模型、API 或大规模场景</td>
+                </tr>
+                <tr>
+                  <td>火山引擎 AgentKit</td>
+                  <td>评测集、评估器、实验</td>
+                  <td>标准化测试数据集，支持 trace 回流、草稿和历史版本</td>
+                  <td>公开文档明确写到数据版本与实验关联</td>
+                </tr>
+                <tr>
+                  <td>腾讯云</td>
+                  <td>评测集、评测任务</td>
+                  <td>可统一管理、供后续多次使用的批量测试数据集</td>
+                  <td>本次查阅页面未明确说明完整的数据版本、来源血缘和治理模型</td>
+                </tr>
+                <tr>
+                  <td>阿里云百炼</td>
+                  <td>评测集、评测维度、评测任务</td>
+                  <td>应用评测的数据基础，支持观测导入、发布状态和版本管理</td>
+                  <td>模型评测和应用评测的数据结构分别管理</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Anthropic：先定义成功，再构造评测套件</h3>
+
+          <p>
+            Anthropic 的公开文档更关注方法论。它要求先定义具体、可测量、与应用目标相关的 success criteria，再设计能反映真实任务分布和边界情况的测试用例。评分方法按任务选择代码、人工或 LLM grader，其中代码评分最稳定，人工评分最灵活但成本最高，LLM 评分则需要先用人工样本验证可靠性。
+          </p>
+
+          <p>
+            Anthropic 的官方 Cookbook 用输入、模型输出、golden answer 和 score 四部分演示一条 eval；这是构建示例，不是强制数据模型。Console 的 Evaluation Tool 则允许手工添加、自动生成或从 CSV 导入 test cases，并用同一组测试用例比较不同 prompt 版本。它的公开重点是成功标准、测试用例和 grader，而不是把 eval suite 定义成带发布、版本和血缘的治理对象。
+          </p>
+
+          <h3>OpenAI：Dataset 是迭代空间，Eval 是可执行配置</h3>
+
+          <p>
+            OpenAI 当前把 Dataset 描述为一个持续扩展的动态空间。数据列可以同时被 prompt 和 grader 引用；运行后会产生 output 列；人工可以添加 Good / Bad、文本反馈和自定义标注；grader 会在数据和 prompt 变化后继续保留，用来比较不同版本。它首先是迭代空间，不等于默认冻结的数据集版本。
+          </p>
+
+          <p>
+            Evals API 里的 Eval 更像一个正式的评测配置对象，由 <code>data_source_config</code> 和 <code>testing_criteria</code> 两个关键部分组成：前者定义测试数据 schema，后者保存 graders。具体执行会生成 Eval Run，关联数据源和模型，并提供汇总计数、用量信息和报告；逐项输入、输出与评分可在运行结果明细中查看。
+          </p>
+
+          <p>
+            需要注意的是，OpenAI 官方文档已经宣布 Evals platform 将在 2026 年 10 月 31 日进入只读，并计划于 11 月 30 日关闭，同时建议快速迭代的新用户从 Datasets 开始。因此，本文引用的是截至写作时的 API 对象模型，不把旧平台界面当作长期稳定的产品形态。
+          </p>
+
+          <h3>火山引擎 AgentKit：评测集、评估器和实验分开</h3>
+
+          <p>
+            火山引擎 AgentKit 将评测拆成评测集、评估器和实验三个模块。官方把评测集定义为一组用于评测对象的数据，并在管理文档中进一步称为“标准化测试数据集”。基础列包括 <code>input</code>、<code>reference_output</code> 和 <code>actual_output</code>，其中实际输出可以承接线上 trace 回流场景。
+          </p>
+
+          <p>
+            它还明确提供草稿、提交新版本、历史版本查看和实验关联。草稿数据修改不会影响已提交版本；历史实验可以回溯到当时使用的数据版本。这已经非常接近工程语境里的评测资产管理。不过，trace 导入只说明数据来源，不能替代脱敏、复核、可复现性检查和正式准入。
+          </p>
+
+          <h3>腾讯云：统一管理并多次使用</h3>
+
+          <p>
+            腾讯云智能体开发平台对评测集的定义很直接：它是用于批量测试应用效果的测试数据集，支持统一管理，并可供后续多次使用。评测集包含 query、预置列和自定义列；当任务需要依据参考答案评分时，可以增加 <code>reference_output</code>。
+          </p>
+
+          <p>
+            评测任务可以选择裁判模型、规则、Python 代码或只运行不评分，任务完成后也可以继续人工标注。这个口径已经明确表达了“复用”；至于完整的评测集版本、来源 trace 和治理状态，本次查阅的公开页面没有进一步说明。
+          </p>
+
+          <h3>阿里云百炼：评测集是应用评测的数据基础</h3>
+
+          <p>
+            阿里云百炼把评测集称为应用评测的数据基础，用来存储和管理评测数据。新版评测集分为智能体、工作流和自定义三类：前两类根据应用出入参生成字段结构，自定义类型允许自行定义表结构。
+          </p>
+
+          <p>
+            新版应用评测集的数据既可以手工上传，也可以从应用观测导入真实数据。评测集创建后可以保持草稿状态，发布后才能被评测任务引用，每次发布会生成新版本，创建任务时可以选择特定版本。观测导入同样只是数据来源，不代表样本自动通过资产准入。模型评测侧还区分“评测数据集”和已经包含模型输出的“推理结果集”；两套文档服务不同评测流程，不应混成同一个数据对象。
+          </p>
+
+          <p class="sequence-note">五家没有共同认可的“评测资产”标准。把测试数据、判定规则和具体运行结果分成三层，是本文为了跨平台管理而做的抽象。</p>
+        </section>
+
+        <section id="layers">
+          <h2>评测资产的三层结构</h2>
+
+          <p>
+            为了在真实项目中管理这些对象，本文把评测资产拆成数据、判定和结果三层。三层应该通过稳定 ID 与版本关联，但不能存成一张不断覆盖的宽表。不同平台可能把 output 列放在 Dataset，也可能把它放在 Run 的结果明细里；这里的三层是管理建议，不代表五家平台都把每次运行结果定义成需要长期保存的资产。
+          </p>
+
+          <div class="table-wrap">
+            <table aria-label="评测资产三层结构">
+              <thead>
+                <tr>
+                  <th scope="col">资产层</th>
+                  <th scope="col">回答的问题</th>
+                  <th scope="col">典型对象</th>
+                  <th scope="col">关键版本</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>数据资产</td>
+                  <td>拿什么测</td>
+                  <td>输入、上下文、参考答案、期望行为、环境 fixture、人工标注</td>
+                  <td><code>sample_version</code>、<code>dataset_version</code></td>
+                </tr>
+                <tr>
+                  <td>判定资产</td>
+                  <td>凭什么判断</td>
+                  <td>success criteria、rubric、规则、代码 grader、裁判 Prompt、标注规范</td>
+                  <td><code>rubric_version</code>、<code>evaluator_version</code></td>
+                </tr>
+                <tr>
+                  <td>结果资产</td>
+                  <td>哪次运行得出了什么</td>
+                  <td>Eval Run、实验、实际输出、逐项评分、用量、成本或延迟（若平台提供）、评测报告</td>
+                  <td><code>experiment_id</code>、应用与模型版本</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>数据资产：拿什么测</h3>
+
+          <p>
+            数据资产不只是一列用户问题。对单轮问答，它可能是输入和参考答案；对工具型 Agent，它还要包含允许调用的工具、初始环境状态和最终状态断言；对多轮 Agent，则要保存必要的会话上下文、可审计轨迹和可重建依赖。
+          </p>
+
+          <h3>判定资产：凭什么判断</h3>
+
+          <p>
+            同一条样本可以被不同评估器判断。确定性任务优先使用状态断言、字符串或代码规则；开放式任务使用清晰 rubric 和经过校准的模型裁判；高风险或争议样本保留人工结论。修改判定规则应产生新版本，而不是静默改写过去的实验含义。
+          </p>
+
+          <h3>结果资产：哪次运行得出了什么</h3>
+
+          <p>
+            结果资产必须能回答：使用了哪版数据、哪版 grader、哪版模型、Prompt 和工具，产出了什么输出与得分。只有保存这些关联，两次实验的差异才可以解释，发布门禁也才能复现。
+          </p>
+        </section>
+
+        <section id="definition">
+          <h2>评测资产的推荐定义</h2>
+
+          <p class="sequence-note">
+            评测资产，是围绕明确质量目标组织的、可重复使用并可追溯管理的评测数据、判定配置和运行结果。其核心通常包括版本化评测集或测试套件、成功标准与评估器，以及与特定模型、Prompt、工具或应用版本关联的实验结果和元数据。
+          </p>
+
+          <p>
+            这个定义是对公开平台对象的工程抽象，不是某一家厂商的原文。版本、血缘、权限、脱敏和生命周期也不是所有平台都完整覆盖的功能，但如果面向真实业务长期维护，它们不能只靠团队约定存在。
+          </p>
+
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table" aria-label="评测资产狭义与广义口径对比">
+              <thead>
+                <tr>
+                  <th scope="col">口径</th>
+                  <th scope="col">定义</th>
+                  <th scope="col">典型对象</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>狭义</td>
+                  <td>经过治理、能够稳定重复执行的一条评测样本或一个版本化评测集</td>
+                  <td>Eval item、test case、dataset snapshot</td>
+                </tr>
+                <tr>
+                  <td>广义</td>
+                  <td>支撑评测活动并可重复使用的全部数据、判定配置和结果</td>
+                  <td>评测集、grader、rubric、标注规范、实验配置和历史结果</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            作为概念筛选，可以先问三个问题：场景能否重放，结果能否判定，结论能否沿来源和版本追溯。跨版本比较、权限、脱敏和留存等要求，则要在真正的资产准入阶段逐项检查。
+          </p>
+        </section>
+
+        <section id="boundaries">
+          <h2>哪些对象还不能直接称为资产</h2>
+
+          <div class="table-wrap">
+            <table aria-label="评测相关对象的边界">
+              <thead>
+                <tr>
+                  <th scope="col">对象</th>
+                  <th scope="col">主要用途</th>
+                  <th scope="col">能否直接回归</th>
+                  <th scope="col">正确位置</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Raw trace</td>
+                  <td>保留生产执行证据</td>
+                  <td>通常不能直接作为稳定回归输入</td>
+                  <td>原始素材或证据源，需脱敏和 fixture 化</td>
+                </tr>
+                <tr>
+                  <td>Production feedback</td>
+                  <td>记录点赞、投诉、转人工和业务结果</td>
+                  <td>通常不能直接回归</td>
+                  <td>候选标签或触发信号，需进一步验证</td>
+                </tr>
+                <tr>
+                  <td>Candidate sample</td>
+                  <td>承载抽样、过滤和初步评分后的记录</td>
+                  <td>通常不能直接回归</td>
+                  <td>待复核、待加工的候选记录</td>
+                </tr>
+                <tr>
+                  <td>Review item</td>
+                  <td>组织人工确认、争议仲裁和责任交接</td>
+                  <td>通常不能直接回归，需转为 eval item</td>
+                  <td>工作流对象，不是正式样本</td>
+                </tr>
+                <tr>
+                  <td>Eval item</td>
+                  <td>独立执行一次评测</td>
+                  <td>可以</td>
+                  <td>狭义资产的基本单元</td>
+                </tr>
+                <tr>
+                  <td>Versioned dataset</td>
+                  <td>按目标和分层组织一组样本</td>
+                  <td>可以</td>
+                  <td>正式的数据资产</td>
+                </tr>
+                <tr>
+                  <td>Evaluator</td>
+                  <td>用规则、代码、模型或人工规范作出判断</td>
+                  <td>用于执行评测</td>
+                  <td>判定资产</td>
+                </tr>
+                <tr>
+                  <td>Experiment result</td>
+                  <td>保存某个版本在特定数据与评估器下的表现</td>
+                  <td>用于比较</td>
+                  <td>结果资产</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>不一定有标准答案，但必须可判定</h3>
+
+          <p>
+            结构化抽取可以比对目标字段，工具调用可以检查工具名、参数和最终系统状态，隐私泄露可以由规则或分类器判断，开放式回复则可以使用 rubric 和人工结论。<code>reference_output</code> 很常见，但真正不可缺少的是与评测目标匹配的判定依据。
+          </p>
+
+          <p>
+            如果一条样本只有历史输入和输出，没有说明什么算通过、证据从哪里来，它仍然只是一条案例。相反，一条没有唯一答案的开放任务，只要 rubric、证据和评分流程足够稳定，也可以成为正式资产。
+          </p>
+
+          <h3>过程证据不等于隐藏思维链</h3>
+
+          <p>
+            Agent 过程评测需要保存可审计的路由决策、工具调用、检索文档 ID、排序结果、计划步骤摘要、错误码和重试过程。它不要求默认保存或传播模型完整的隐藏思维链。评测资产需要的是能定位和重放的证据，而不是不可验证的内部推理文本。
+          </p>
+        </section>
+
+        <section id="lifecycle">
+          <h2>从 production trace 到版本化资产</h2>
+
+          <p>
+            一条线上记录进入正式评测集之前，需要经过发现、复核、加工、准入、回归和线上验证。下面的抽样比例和阈值只是实现方式示例，不是所有业务都应照搬的默认值。
+          </p>
+
+          <p>
+            下文所说的“发布负责人”是发布门禁中的决策职责，实际可以由业务负责人或 Agent 开发承担；评测负责人提供冻结版本、评估器和结果证据。
+          </p>
+
+          <p class="sequence-note">四条状态不要混用：资产状态 candidate → processed → approved → deprecated；复核状态 pending → confirmed / dismissed；回归状态 not_run → passed / failed；线上验证状态 pending → verified / failed。</p>
+
+          <ol>
+            <li>
+              <strong>采集生产证据</strong>：每次生产运行都触发埋点，Agent 开发预先保证 <code>trace_id</code>、<code>session_id</code>、span 关系、模型、Prompt、工具版本和最终状态被写入。原始 trace 随后交给抽样流水线；只要一次失败还不能定位到具体版本和证据 span，这一步就没有验收通过。
+            </li>
+            <li>
+              <strong>生成候选样本</strong>：评测负责人配置两类触发器——普通流量按小时或天批量抽样，高风险调用、错误和投诉按事件实时触发。命中后创建 <code>asset_status = candidate</code> 的记录；示例可以是随机抽取 5% 普通流量并覆盖所有高风险工具调用。验收看必填字段完整度、场景覆盖率和去重率，具体比例必须按业务风险与成本校准。
+            </li>
+            <li>
+              <strong>进入人工复核队列</strong>：当 <code>auto_score</code> 低于场景阈值、多个评估器冲突、置信度过低、出现用户投诉或命中高风险规则时，系统创建 <code>review_status = pending</code> 的 review item，按 <code>scene</code> 和 <code>risk_level</code> 分派给对应复核者。高风险项可以设置更高优先级和更短 SLA，但这只是说明性规则。自动评分只是入队证据，不是人工标签。
+            </li>
+            <li>
+              <strong>确认问题和期望行为</strong>：复核者根据证据标注，业务负责人对“业务上是否可接受”作最终仲裁，评测负责人记录 <code>review_status = confirmed</code> 或 <code>dismissed</code>。确认的问题至少要有 <code>human_label</code>、<code>expected_behavior</code> 和 <code>owner</code>，再交给 Agent 开发补充 <code>root_cause</code> 和修复方案；没有证据或责任人的问题项不能进入下一步。
+            </li>
+            <li>
+              <strong>完成资产加工</strong>：评测负责人执行脱敏、去重、上下文裁剪和 schema 归一化，构造 <code>environment_fixture</code>，绑定 <code>rubric_version</code> 或 <code>evaluator_version</code>，输出 <code>asset_status = processed</code> 和新的 <code>sample_version</code>。同一 fixture 连续重放仍不能得到稳定判定的记录，只能留作问题证据，不能进入正式回归集。
+            </li>
+            <li>
+              <strong>通过准入并冻结版本</strong>：高风险样本先由业务负责人确认期望行为，评测负责人再执行准入检查并发布新的 <code>dataset_version</code>，样本更新为 <code>asset_status = approved</code>。它随后进入代表性集、挑战集、回归集、安全集或效率集，并交给 Agent 开发和发布门禁使用。
+            </li>
+            <li>
+              <strong>运行回归并形成发布结论</strong>：Agent 开发同时固定 <code>dataset_version</code>、<code>evaluator_version</code>、<code>model_version</code>、<code>prompt_version</code> 和 <code>tool_version</code> 后执行回归，输出 <code>regression_status = passed</code> 或 <code>failed</code>。结果和相邻场景退化检查交给发布负责人，作为是否进入灰度的输入，而不是由单条分数直接决定上线。
+            </li>
+            <li>
+              <strong>灰度后线上验证</strong>：版本进入灰度后，评测负责人继续观察原 <code>trigger_reason</code> 和相邻指标，写入 <code>online_verification_status = verified</code> 或 <code>failed</code>。观察窗口、最低样本量和失败阈值应在发布前约定；达到条件后关闭问题项，未达到则重新交给开发处理。
+            </li>
+          </ol>
+
+          <h3>最小字段模型</h3>
+
+          <p>
+            平台不必一开始建设完整资产中心，但数据模型至少要让团队知道一条样本来自哪里、评什么、怎样判断、对应哪个版本，以及能否安全复用。
+          </p>
+
+          <div class="table-wrap">
+            <table aria-label="评测资产最小字段模型">
+              <thead>
+                <tr>
+                  <th scope="col">分组</th>
+                  <th scope="col">代表字段</th>
+                  <th scope="col">回答的问题</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>数据资产</td>
+                  <td><code>sample_id</code>、<code>sample_version</code>、<code>trace_id</code>、<code>scene</code>、<code>user_input</code>、<code>environment_fixture</code>、<code>dataset_version</code></td>
+                  <td>拿什么测，来自哪里，怎样重放，属于哪个集合版本</td>
+                </tr>
+                <tr>
+                  <td>判定资产</td>
+                  <td><code>expected_behavior</code>、<code>reference_output</code>、<code>rubric_version</code>、<code>evaluator_version</code>、<code>human_label</code></td>
+                  <td>什么算通过，使用哪版规则或人工规范</td>
+                </tr>
+                <tr>
+                  <td>结果资产</td>
+                  <td><code>experiment_id</code>、<code>actual_output</code>、<code>auto_score</code>、<code>regression_status</code>、<code>model_version</code>、<code>prompt_version</code>、<code>tool_version</code></td>
+                  <td>哪次运行得出了什么，结论对应哪套应用版本</td>
+                </tr>
+                <tr>
+                  <td>工作流状态</td>
+                  <td><code>asset_status</code>、<code>review_status</code>、<code>online_verification_status</code>、<code>owner</code></td>
+                  <td>对象现在在哪条流程上，下一步由谁接手</td>
+                </tr>
+                <tr>
+                  <td>横向治理</td>
+                  <td><code>trigger_reason</code>、<code>pii_status</code>、<code>access_level</code>、<code>retention_policy</code>、<code>transformations</code>、<code>approved_by</code>、<code>deprecated_reason</code></td>
+                  <td>为什么进入、能否安全复用、由谁批准或退出</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>不要只积累失败样本</h3>
+
+          <p>
+            只把低分和 bad case 放进评测集，最后得到的是缺陷库，而不是反映真实流量的综合评测集。代表性集用来估计整体质量，挑战集覆盖困难和长尾问题，回归集防止已修复问题复发，安全集覆盖越权与隐私风险，效率集检查延迟、成本和重试行为。
+          </p>
+        </section>
+
+        <section id="roles">
+          <h2>三个角色怎样分工</h2>
+
+          <div class="table-wrap">
+            <table aria-label="评测资产三个角色分工">
+              <thead>
+                <tr>
+                  <th scope="col">角色</th>
+                  <th scope="col">主要输入</th>
+                  <th scope="col">具体动作</th>
+                  <th scope="col">交付与验收</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>业务负责人</td>
+                  <td>业务场景、用户影响、风险等级、不可接受结果</td>
+                  <td>定义 <code>scene</code>、<code>risk_level</code> 和 <code>expected_behavior</code>，仲裁业务可接受性，确认高风险样本</td>
+                  <td>不同复核者能按描述稳定区分可接受与不可接受行为</td>
+                </tr>
+                <tr>
+                  <td>Agent 开发</td>
+                  <td>确认的问题项、证据 span、版本和复现条件</td>
+                  <td>提供 trace schema，定位 <code>root_cause</code>，修复并执行离线回归</td>
+                  <td>失败可复现，修复版本和 <code>regression_status</code> 可追踪</td>
+                </tr>
+                <tr>
+                  <td>评测负责人</td>
+                  <td>生产流量、场景风险、自动分数、人工结论</td>
+                  <td>管理抽样、grader、复核队列、标注规范、资产准入、数据集版本、线上验证与废弃</td>
+                  <td>每条 approved 资产都有判定依据、血缘、治理状态和归属版本</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            最容易失效的交接发生在人工复核之后：问题确认了却没有 owner，开发修复了却没有把原样本加入回归，样本进入数据集却没有记录 rubric 和 evaluator 版本。队列状态应承载这些交接，不能只依赖聊天记录或个人记忆。
+          </p>
+        </section>
+
+        <section id="example">
+          <h2>一条样本怎样走完整个闭环</h2>
+
+          <p>
+            以一个公开、通用的售后 Agent 场景为例：用户要求把一笔符合规则的退款退回原支付方式，Agent 却错误选择了优惠券补偿工具。
+          </p>
+
+          <p class="sequence-note">以下 <code>trace_id</code>、版本号和状态值均为便于说明而编造的示例，不对应任何真实系统。</p>
+
+          <ol>
+            <li>
+              <strong>线上发现</strong>：系统采集 <code>trace_id = tr_refund_1042</code>。规则发现 <code>scene = refund</code>、<code>tool_name = issue_coupon</code> 与用户诉求不一致，于是创建 <code>asset_status = candidate</code> 的记录，写入 <code>trigger_reason = tool_intent_mismatch</code>，并生成 <code>review_status = pending</code> 的复核项。
+            </li>
+            <li>
+              <strong>人工确认</strong>：业务负责人确认该订单满足原路退款条件，并写下 <code>expected_behavior = verify_order_then_refund_to_original_method</code>。评测负责人将 <code>human_label</code> 标为 <code>wrong_tool_selection</code>、把 <code>review_status</code> 更新为 <code>confirmed</code>，同时核对证据和脱敏状态。
+            </li>
+            <li>
+              <strong>诊断与修复</strong>：Agent 开发沿 <code>span_id</code> 检查路由与工具选择，记录 <code>root_cause = refund_policy_not_in_tool_routing</code>，修正规则并产生新的 <code>prompt_version</code> 和 <code>tool_version</code>。
+            </li>
+            <li>
+              <strong>资产加工</strong>：评测负责人把订单数据替换为 fixture，保留必要对话、退款条件、允许工具、禁止工具和最终状态断言；去重并稳定试跑后写入 <code>sample_version = refund-routing-case-v1</code>、<code>evaluator_version = refund-tool-check-v2</code>，将 <code>asset_status</code> 更新为 <code>processed</code>。
+            </li>
+            <li>
+              <strong>资产准入</strong>：业务负责人再次确认高风险工具的期望行为，评测负责人批准样本并发布 <code>dataset_version = refund-regression-2026-07</code>，将 <code>asset_status</code> 更新为 <code>approved</code>，再交给开发和发布门禁。
+            </li>
+            <li>
+              <strong>离线回归与发布决定</strong>：开发固定数据集、评估器、模型、Prompt 和工具五类版本，在原样本和相邻场景上运行修复版本。验收不仅检查回复文本，还检查正确工具、参数 schema 和最终状态；结果写为 <code>regression_status = passed</code> 后，由发布负责人决定进入灰度。
+            </li>
+            <li>
+              <strong>线上验证</strong>：新版本灰度后，评测负责人继续监控 <code>tool_intent_mismatch</code>。观察窗口和样本量在发布前约定；原问题未复现且相邻指标无明显退化后，将 <code>online_verification_status</code> 更新为 <code>verified</code> 并关闭问题项。
+            </li>
+          </ol>
+
+          <p>
+            这条链路里，trace 是生产证据；经过脱敏和 fixture 化的 eval item 是数据资产；工具选择规则和最终状态断言是判定资产；修复前后的实验、得分和线上验证记录是结果资产。它们共享同一条血缘，但不是同一个对象。
+          </p>
+        </section>
+
+        <section id="admission">
+          <h2>评测资产的准入与废弃</h2>
+
+          <h3>进入正式评测集前</h3>
+
+          <ul>
+            <li>评测目标和场景明确，能说明这条样本要防止什么问题。</li>
+            <li>输入、必要上下文和环境依赖足以稳定重放。</li>
+            <li>存在可执行的通过条件、参考答案、rubric 或验证器。</li>
+            <li>来源 <code>trace_id</code>、采集原因和应用版本可以追溯。</li>
+            <li>人工标签、自动评分和争议仲裁保留了版本与证据。</li>
+            <li>已经完成脱敏、授权检查、去重和留存策略设置。</li>
+            <li>已经使用目标 evaluator 试跑，并能稳定得到预期判断。</li>
+          </ul>
+
+          <p>
+            准入的输出不是一句“这个 bad case 很重要”，而是一条 <code>asset_status = approved</code>、归属到明确 <code>dataset_version</code>、能够在目标环境稳定执行的 eval item。评测负责人批准并发布数据集版本，业务负责人确认高风险样本的期望行为，开发负责保证环境可复现；发布后交给开发和发布门禁执行。
+          </p>
+
+          <h3>废弃也需要一条工作流</h3>
+
+          <ul>
+            <li>外部依赖已经无法重建，样本不再可复现。</li>
+            <li>业务规则或 rubric 已改变，旧判断标准不再适用。</li>
+            <li>样本被更清晰、更具代表性的用例替代。</li>
+            <li>数据授权、访问条件或留存期限已经失效。</li>
+            <li>对应业务场景已经下线，继续运行不会影响任何决策。</li>
+          </ul>
+
+          <p>
+            触发上述任一条件时，评测负责人创建废弃复核；业务负责人确认场景或规则已经失效，Agent 开发检查 fixture 和发布门禁的依赖。通过后生成不再包含该样本的新 <code>dataset_version</code>，并写入 <code>asset_status = deprecated</code>、<code>deprecated_reason</code>、<code>deprecated_at</code>、退出版本和可选的 <code>replacement_sample_id</code>。
+          </p>
+
+          <p>
+            废弃不等于直接删除。评测负责人需要通知仍引用旧版本的门禁、看板和负责人；已经被历史实验引用的资产保留只读快照。完成标准是新任务不再调度旧样本、依赖方已经迁移，而历史报告仍能解析当时的数据与判定版本。
+          </p>
+        </section>
+
+        <section id="conclusion">
+          <h2>结论</h2>
+
+          <p>
+            原始数据的价值来自它记录了什么，评测资产的价值来自它能否在下一次变更中继续给出可信判断。因此，评测资产建设不是把 trace 搬进数据集，而是把一次生产证据加工成可复用的数据、稳定的判定规则和可比较的实验结果。
+          </p>
+
+          <p>
+            实际落地时，不必一开始建设完整平台。先选一个高频或高风险场景，跑通“生产发现—人工确认—资产加工—版本冻结—修复回归—线上验证”这条链路。只要每一步都有明确的 owner、输入、输出和验收条件，评测资产就开始真正参与产品迭代，而不只是一个越来越大的数据文件夹。
+          </p>
+        </section>
+
+        <section id="references">
+          <h2>参考资料</h2>
+
+          <p class="post-meta">公开页面查阅日期：2026 年 7 月 20 日。</p>
+
+          <ul>
+            <li><a href="https://platform.claude.com/docs/en/test-and-evaluate/develop-tests">Anthropic: Define success criteria and build evaluations</a> — 成功标准、真实任务分布和三类评分方法。</li>
+            <li><a href="https://platform.claude.com/docs/en/test-and-evaluate/eval-tool">Anthropic: Using the Evaluation Tool</a> — Test cases、评测套件重跑和 Prompt 版本比较。</li>
+            <li><a href="https://platform.claude.com/cookbook/misc-building-evals">Anthropic Cookbook: Building Evals</a> — 输入、输出、golden answer 和 score 四部分。</li>
+            <li><a href="https://developers.openai.com/api/docs/guides/evaluation-getting-started">OpenAI: Getting started with datasets</a> — Dataset、annotations、graders 和 Prompt 版本。</li>
+            <li><a href="https://developers.openai.com/api/docs/guides/evals">OpenAI: Working with evals</a> — <code>data_source_config</code>、<code>testing_criteria</code> 和 Eval Run。</li>
+            <li><a href="https://docs.volcengine.com/docs/86681/2220358?lang=zh">火山引擎 AgentKit：什么是评测</a> — 评测集、评估器和实验三个核心模块。</li>
+            <li><a href="https://docs.volcengine.com/docs/86681/2220509?lang=zh">火山引擎 AgentKit：管理评测集</a> — Trace 回流、草稿、历史版本和实验关联。</li>
+            <li><a href="https://cloud.tencent.com/document/product/1759/104208">腾讯云智能体开发平台：应用评测</a> — 可重复使用的评测集和多种评分方式。</li>
+            <li><a href="https://cloud.tencent.com/document/product/851/117032">腾讯云 TI-ONE：模型评测简介</a> — 人工评测、自动评测、性能评测和标准化自有数据集。</li>
+            <li><a href="https://help.aliyun.com/zh/model-studio/new-version-of-evaluation-set">阿里云百炼：新版评测集</a> — 智能体、工作流、自定义评测集及版本管理。</li>
+            <li><a href="https://help.aliyun.com/zh/model-studio/application-evaluation-dataset">阿里云百炼：评测集（旧版）</a> — 对话分析和知识问答评测集；与新版应用评测集分开引用。</li>
+            <li><a href="https://help.aliyun.com/zh/model-studio/model-evaluation-overview">阿里云百炼：模型评测</a> — 评测数据集、推理结果集、评测维度和任务结果。</li>
+          </ul>
+        </section>
+      </article>
+    </main>
+
+    <script>
+      const tocLinks = [...document.querySelectorAll(".post-toc a")];
+      const tocSections = tocLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+
+      const tocObserver = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+          if (!visible) return;
+
+          tocLinks.forEach((link) => {
+            const isActive = link.getAttribute("href") === `#${visible.target.id}`;
+            link.classList.toggle("is-active", isActive);
+            if (isActive) {
+              link.setAttribute("aria-current", "location");
+            } else {
+              link.removeAttribute("aria-current");
+            }
+          });
+        },
+        { rootMargin: "-18% 0px -62% 0px", threshold: [0.15, 0.35, 0.6] }
+      );
+
+      tocSections.forEach((section) => tocObserver.observe(section));
+    </script>
+  </body>
+</html>

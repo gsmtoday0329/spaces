@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一个忙碌程序员的认知破局方法</title>
+    <meta
+      name="description"
+      content="记录一次关于忙碌程序员如何提升认知的思考：从信息输入、问题意识、术语表、问题池到每周沉淀。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #1c2644;
+        --navy-2: #263457;
+        --paper: #f0ece3;
+        --paper-2: #e7dfd1;
+        --ink: #192032;
+        --muted: #647087;
+        --cream: #e8dfcf;
+        --line: #c9c0af;
+        --line-dark: #364464;
+        --gold: #c8a870;
+        --rose: #c47c72;
+        --shadow: 0 24px 70px rgba(18, 24, 42, 0.22);
+        --display: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+        --body: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", "Noto Sans SC", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: var(--body);
+        background:
+          radial-gradient(circle at 10% 0%, rgba(200, 168, 112, 0.22), transparent 28rem),
+          linear-gradient(135deg, var(--navy) 0%, #11182b 43%, var(--paper) 43%, var(--paper) 100%);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0 68px;
+      }
+
+      .hero {
+        min-height: 540px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+        gap: 28px;
+        align-items: stretch;
+      }
+
+      .hero-copy {
+        color: var(--cream);
+        padding: 34px 0 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+      }
+
+      .kicker {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: var(--gold);
+        border-left: 3px solid var(--gold);
+        padding-left: 12px;
+        line-height: 1.5;
+      }
+
+      h1 {
+        font-family: var(--display);
+        font-size: 4.75rem;
+        line-height: 0.98;
+        margin: 36px 0 22px;
+        letter-spacing: 0;
+        font-weight: 700;
+        max-width: 790px;
+      }
+
+      h1 em {
+        color: var(--gold);
+        font-style: italic;
+        font-weight: 600;
+      }
+
+      .hero-copy p {
+        max-width: 700px;
+        color: rgba(232, 223, 207, 0.82);
+        font-size: 1.08rem;
+        line-height: 1.9;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .button {
+        border: 1px solid var(--line-dark);
+        color: var(--cream);
+        background: rgba(255, 255, 255, 0.035);
+        padding: 11px 14px;
+        text-decoration: none;
+      }
+
+      .button.primary {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--ink);
+      }
+
+      .side-panel {
+        background: rgba(240, 236, 227, 0.97);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        padding: 24px;
+        min-height: 540px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 18px;
+      }
+
+      .side-panel h2 {
+        font-family: var(--display);
+        font-size: 2.35rem;
+        line-height: 1.08;
+        margin: 0;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .toc {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        align-content: start;
+      }
+
+      .toc a {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        text-decoration: none;
+        line-height: 1.62;
+        color: var(--muted);
+      }
+
+      .toc span {
+        font-family: var(--mono);
+        color: var(--rose);
+      }
+
+      .article-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 28px;
+        margin-top: 42px;
+        align-items: start;
+      }
+
+      article {
+        background: rgba(240, 236, 227, 0.97);
+        border: 1px solid var(--line);
+        padding: 34px;
+      }
+
+      article section + section {
+        margin-top: 42px;
+        padding-top: 34px;
+        border-top: 1px solid var(--line);
+      }
+
+      h2 {
+        font-family: var(--display);
+        font-size: 2.55rem;
+        line-height: 1.08;
+        margin: 0 0 18px;
+      }
+
+      h3 {
+        font-family: var(--display);
+        font-size: 1.62rem;
+        line-height: 1.18;
+        margin: 28px 0 12px;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.9;
+        font-size: 1rem;
+      }
+
+      .lead {
+        color: var(--ink);
+        font-size: 1.16rem;
+        line-height: 1.95;
+      }
+
+      .quote {
+        border-left: 4px solid var(--gold);
+        background: var(--paper-2);
+        padding: 18px 20px;
+        margin: 24px 0;
+        color: var(--ink);
+        font-family: var(--display);
+        font-size: 1.38rem;
+        line-height: 1.6;
+      }
+
+      .note-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 22px 0 4px;
+      }
+
+      .note-card {
+        border: 1px solid var(--line);
+        background: #fbf8f0;
+        padding: 18px;
+        min-height: 150px;
+      }
+
+      .note-card strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 9px;
+      }
+
+      .note-card p {
+        margin: 0;
+        font-size: 0.96rem;
+      }
+
+      .formula {
+        display: grid;
+        gap: 10px;
+        margin: 24px 0;
+      }
+
+      .formula-item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: baseline;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+      }
+
+      .formula-item span {
+        font-family: var(--mono);
+        color: var(--rose);
+        font-size: 0.78rem;
+      }
+
+      .formula-item strong {
+        color: var(--ink);
+      }
+
+      .side-note {
+        position: sticky;
+        top: 24px;
+        background: var(--navy);
+        color: var(--cream);
+        border: 1px solid var(--line-dark);
+        padding: 22px;
+      }
+
+      .side-note h2 {
+        font-size: 2rem;
+        color: var(--cream);
+      }
+
+      .side-note p {
+        color: rgba(232, 223, 207, 0.78);
+      }
+
+      .side-note ul {
+        display: grid;
+        gap: 10px;
+        padding: 0;
+        margin: 16px 0 0;
+        list-style: none;
+      }
+
+      .side-note li {
+        border-top: 1px solid var(--line-dark);
+        padding-top: 10px;
+        color: rgba(232, 223, 207, 0.82);
+        line-height: 1.65;
+      }
+
+      footer {
+        color: rgba(232, 223, 207, 0.68);
+        margin-top: 44px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line-dark);
+        font-size: 0.9rem;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 980px) {
+        body {
+          background:
+            radial-gradient(circle at 0% 0%, rgba(200, 168, 112, 0.2), transparent 22rem),
+            linear-gradient(180deg, var(--navy) 0 660px, var(--paper) 660px 100%);
+        }
+
+        .hero,
+        .article-shell,
+        .note-grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 3.35rem;
+        }
+
+        .side-note {
+          position: static;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .page {
+          width: min(100% - 20px, 1180px);
+          padding-top: 16px;
+        }
+
+        h1 {
+          font-size: 2.55rem;
+          line-height: 1.03;
+        }
+
+        article,
+        .side-panel,
+        .side-note {
+          padding: 18px;
+        }
+
+        h2 {
+          font-size: 2.05rem;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <div>
+            <div class="kicker">Cognition System / Personal Note / 2026-06-22</div>
+            <h1 id="page-title">一个忙碌程序员的 <em>认知破局方法</em></h1>
+            <p>
+              这篇文章记录一次自我追问：为什么同样很忙，有些人仍然保持对政治、经济、产业、技术趋势的敏感度，而我常常停留在工作细节里？我最后得到的答案很具体：认知差距来自信息入口、问题层级、反馈环境和输出习惯。破局也要具体：一个领域、一张术语表、一个问题池、每周一次沉淀。
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#article">阅读正文</a>
+              <a class="button" href="./index.html">返回芯片术语表</a>
+              <a class="button" href="./question-pool.html">打开问题池</a>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side-panel" aria-labelledby="toc-title">
+          <h2 id="toc-title">文章目录</h2>
+          <ul class="toc">
+            <li><a href="#why"><span>01</span><div>为什么忙人之间认知差距很大</div></a></li>
+            <li><a href="#mechanism"><span>02</span><div>认知差距的四个机制</div></a></li>
+            <li><a href="#programmer"><span>03</span><div>程序员的认知偏科</div></a></li>
+            <li><a href="#boss"><span>04</span><div>老板们的信息入口</div></a></li>
+            <li><a href="#system"><span>05</span><div>我的破局系统</div></a></li>
+            <li><a href="#chip"><span>06</span><div>先用芯片跑通闭环</div></a></li>
+            <li><a href="#routine"><span>07</span><div>忙的时候如何不断线</div></a></li>
+            <li><a href="#next"><span>08</span><div>跑通后复制到其他领域</div></a></li>
+          </ul>
+        </aside>
+      </section>
+
+      <div class="article-shell" id="article">
+        <article>
+          <section id="why">
+            <h2>一、为什么忙人之间认知差距很大</h2>
+            <p class="lead">
+              我最初的困惑很简单：我每天上班、健身、处理生活事项，剩下的时间和精力很少。政治、时事、经济、芯片这些领域，我都觉得自己理解很浅。可身边也有一些同样很忙的人，他们依然能跟上世界的变化，聊天时能讲出因果和判断。
+            </p>
+            <p>
+              这说明问题的关键不只在时间。很多人看起来有认知，靠的也不是每天拿出整块时间系统学习。他们更像是长期处在高质量信息流里，并且脑子里一直挂着问题。新闻、饭局、播客、行业交流、工作判断，都会被他们挂到这些问题上。
+            </p>
+            <div class="quote">
+              认知提升的关键，是让每次输入都能落到结构里。
+            </div>
+            <p>
+              忙人之间的差距，常常来自四件事：信息入口不同、问题层级不同、输出习惯不同、决策环境不同。有的人每天接触客户、投资人、供应商、行业朋友和竞争对手；有的人每天接触需求、接口、故障和排期。久而久之，两类人的世界地图会很不一样。
+            </p>
+          </section>
+
+          <section id="mechanism">
+            <h2>二、认知差距的四个机制</h2>
+            <p>
+              以前我容易把“认知高”理解成一个人读书多、消息多、精力旺盛。后来发现，更关键的是他有没有长期处在一个能生产判断的环境里。信息进入大脑以后，如果没有问题承接，很快会变成噪音；如果有问题承接，就会变成线索。
+            </p>
+            <div class="note-grid">
+              <div class="note-card">
+                <strong>信息入口</strong>
+                <p>你每天接触的是需求和 bug，还是客户、市场、供应链、政策和钱。入口决定原材料。</p>
+              </div>
+              <div class="note-card">
+                <strong>问题层级</strong>
+                <p>你常问“怎么做完”，还是常问“方向是否成立、谁受影响、约束在哪里”。问题决定视野。</p>
+              </div>
+              <div class="note-card">
+                <strong>反馈环境</strong>
+                <p>判断有没有被现实检验。预算、客户、业务结果、组织变化，都会把模糊观点压成清晰判断。</p>
+              </div>
+              <div class="note-card">
+                <strong>表达习惯</strong>
+                <p>一个人经常讲给别人听、写下来、和人争论，理解会被迫变得更结构化。</p>
+              </div>
+            </div>
+            <p>
+              这四个机制里，我最能主动改的是问题层级和表达习惯。信息入口短期很难彻底改变，决策环境也和岗位有关；但我可以主动建立问题池，可以把输入翻译成术语卡片，可以每周写下一段自己的解释。
+            </p>
+          </section>
+
+          <section id="programmer">
+            <h2>三、程序员的认知偏科</h2>
+            <p>
+              我家属提到一个很有意思的判断：程序员太关注细节了。这个判断有道理。程序员长期被训练成处理局部问题的人：接口怎么设计，bug 怎么复现，性能瓶颈在哪里，需求怎么上线，异常怎么兜底。
+            </p>
+            <p>
+              这种训练非常有价值。它让程序员具备抽象能力、系统分解能力、因果排查能力和工具使用能力。可它也会带来一种惯性：注意力长期停在执行层、实现层、局部闭环层。
+            </p>
+            <div class="note-grid">
+              <div class="note-card">
+                <strong>程序员常练的能力</strong>
+                <p>抽象、拆解、排查、实现、工程化、逻辑一致性。</p>
+              </div>
+              <div class="note-card">
+                <strong>程序员常欠缺的视角</strong>
+                <p>产业链、政策、金融、组织、商业模式、利益结构、宏观变量。</p>
+              </div>
+            </div>
+            <p>
+              所以问题不在于程序员认知低。更准确的说法是：程序员的认知肌肉长期练在代码、系统和交付上，其他方向练得少。一个人擅长把问题做深、做准、做可交付，也可能缺少对更大系统的观察。
+            </p>
+            <h3>细节模式的三个副作用</h3>
+            <p>
+              第一，容易把“可验证”误认为“重要”。代码世界里，能复现、能压测、能上线的东西最有价值；现实世界里，很多重要变量并不容易验证，比如政策预期、组织信任、产业链迁移、客户心理。
+            </p>
+            <p>
+              第二，容易低估人的网络和利益结构。程序员习惯在系统边界内找原因，但商业和政治经常发生在边界之外：谁掌握资源，谁承担成本，谁有动机推动变化。
+            </p>
+            <p>
+              第三，容易把知识当成“概念集合”。知道 GPU、CUDA、HBM 这些词还不够，更关键的是知道它们在解释哪个产业矛盾：算力供给、软件生态、制造能力、政策限制，还是客户迁移。
+            </p>
+          </section>
+
+          <section id="boss">
+            <h2>四、老板们为什么更容易有大图景</h2>
+            <p>
+              老板、高层和管理者的工作环境天然不同。他们每天面对的通常是业务方向、组织资源、客户需求、市场变化、政策影响、竞争格局和资金流向。他们被工作推着建立更大的地图。
+            </p>
+            <p>
+              职位本身不会自动带来判断力。有些老板认知很高，有些也很一般。但高层岗位通常会提供更丰富的信息入口：客户、投资人、供应商、政府关系、行业会议、高管圈子、一线销售、财务数据和竞争对手消息。
+            </p>
+            <p>
+              这些信息通常经过现实筛选。程序员接收到的很多是任务流、需求流和事故流。信息入口的差异，会持续塑造人的问题意识。
+            </p>
+            <div class="quote">
+              高层每天被迫回答“方向是否正确”；执行层每天被迫回答“这件事如何完成”。问题层级不同，认知地图也会不同。
+            </div>
+            <p>
+              当然，老板身份本身不保证高认知。真正有价值的是他们被迫面对的判断场：预算要投向哪里，团队该押哪个方向，客户为什么不买单，竞争对手为什么变强，政策变化会让哪条业务线受伤。这些问题会强迫人跨过细节，去看系统。
+            </p>
+            <p>
+              我不需要复制老板的饭局和社交网络。更适合我的方式，是用程序员熟悉的工具化方法，把自己拉到更高的问题层级：建立术语表，建立问题池，把每次输入都挂到问题上。
+            </p>
+          </section>
+
+          <section id="system">
+            <h2>五、我的破局方法：搭一个认知训练系统</h2>
+            <p>
+              对我来说，破局方法不能依赖意志力。工作忙、精力有限，靠“每天多学一点”很容易断掉。我需要一套能嵌入生活、能低成本重启、能持续积累的系统。
+            </p>
+            <p>
+              最后我把它压缩成一个公式：
+            </p>
+            <div class="formula">
+              <div class="formula-item"><span>01</span><strong>一个领域</strong></div>
+              <div class="formula-item"><span>02</span><strong>一张术语表</strong></div>
+              <div class="formula-item"><span>03</span><strong>一个问题池</strong></div>
+              <div class="formula-item"><span>04</span><strong>每周一次沉淀</strong></div>
+              <div class="formula-item"><span>05</span><strong>一个月一次验收</strong></div>
+              <div class="formula-item"><span>06</span><strong>跑通后复制到下一个领域</strong></div>
+            </div>
+            <p>
+              术语表解决“我听不懂这些词”。问题池解决“这些词到底在解释什么问题”。每周沉淀解决“输入有没有留下结构”。验收解决“我有没有真的变清楚”。
+            </p>
+            <p>
+              这个系统最适合程序员，因为它把学习变成了可迭代的工程：先建最小结构，再持续补充，再定期复盘。
+            </p>
+            <h3>这个系统里，AI 的位置是什么</h3>
+            <p>
+              AI 最适合做三件事。第一，把陌生概念翻译成我能理解的语言，比如把 CUDA 类比成开发平台、运行时、库和生态。第二，帮我把一条新闻拆成结构，看它涉及算力、制造、生态还是管制。第三，逼我复述，让我发现自己哪里讲不清。
+            </p>
+            <p>
+              所以我给 AI 的定位是解释器和追问教练。真正要沉淀的东西，最后仍然要进入我的术语表、问题池和观点草稿。
+            </p>
+          </section>
+
+          <section id="chip">
+            <h2>六、先用芯片跑通第一个闭环</h2>
+            <p>
+              我选择的第一个领域是芯片，尤其是 AI 算力、国产 GPU、中美科技限制和半导体供应链。这个领域离程序员职业很近，也能连接 AI、数据中心、大厂业务、中美关系、产业链和资本开支。
+            </p>
+            <p>
+              这条线的第一批术语包括 GPU、CUDA、HBM、台积电、晶圆代工、先进制程、先进封装、CoWoS、良率、产能、光刻机、EDA、出口管制、实体清单、训练、推理、国产替代、数据中心。
+            </p>
+            <p>
+              接下来每次看到芯片新闻，我只问三个问题：
+            </p>
+            <div class="note-grid">
+              <div class="note-card">
+                <strong>这条新闻里有哪些陌生词？</strong>
+                <p>陌生词进入术语表，用 summary、why、trap 三段写清楚。</p>
+              </div>
+              <div class="note-card">
+                <strong>它对应问题池里的哪个问题？</strong>
+                <p>例如国产 GPU 差距、出口管制、台积电关键性、HBM 和封装瓶颈。</p>
+              </div>
+              <div class="note-card">
+                <strong>我能用自己的话说一句吗？</strong>
+                <p>一句话也算输出。清晰的一句话，比收藏十篇文章更有用。</p>
+              </div>
+              <div class="note-card">
+                <strong>这周要沉淀什么？</strong>
+                <p>新增 3 个术语，更新 1 张问题卡，或写 150 字观点。</p>
+              </div>
+            </div>
+            <p>
+              2026 年 7 月 6 日是第一次阶段验收。到那天，我希望自己能解释 20 个左右高频术语，能拆一条芯片新闻，能说清 CUDA 为什么重要，能说清国产 GPU 差距怎么拆，并且已经新增过术语或观点。
+            </p>
+          </section>
+
+          <section id="routine">
+            <h2>七、忙的时候如何不断线</h2>
+            <p>
+              这个系统要能在忙的时候活下来。只要一忙就崩，说明设计得太重。我的最低标准要足够低：工作日只输入，周末才沉淀；忙到极限时，只保留“听到一个词，问 AI 一次”。
+            </p>
+            <div class="formula">
+              <div class="formula-item"><span>工作日</span><strong>通勤、健身、吃饭时听一点，不强求笔记。</strong></div>
+              <div class="formula-item"><span>当场</span><strong>遇到不懂的词，先问 AI，用自己的话复述一句。</strong></div>
+              <div class="formula-item"><span>周末</span><strong>30 分钟内只做一件事：补术语、补问题、补观点三选一。</strong></div>
+              <div class="formula-item"><span>验收</span><strong>每 14 到 30 天回答一次问题池，看自己能否解释因果。</strong></div>
+            </div>
+            <p>
+              这套节奏的重点是不断线。很多学习计划失败，是因为它默认我每天都有稳定精力。我的现实是工作压力会波动，所以系统必须允许低质量输入、断续输入、只听不记。只要周末还有一点沉淀，认知就没有完全流失。
+            </p>
+            <h3>7 / 30 / 90 天的目标</h3>
+            <p>
+              7 天目标：知道一批高频词，不再对新闻标题完全陌生。30 天目标：能围绕一个主问题讲出因果链，比如国产 GPU 差距怎么拆。90 天目标：能把一个领域的方法复制到另一个领域，比如宏观经济。
+            </p>
+          </section>
+
+          <section id="next">
+            <h2>八、跑通后复制到其他领域</h2>
+            <p>
+              芯片只是第一个训练场。这个模式跑通后，可以复制到宏观经济、国际政治、商业公司、公共政策等领域。第二个领域我倾向于选宏观经济，因为它和就业、资产、消费、社会变化都相关。
+            </p>
+            <p>
+              宏观经济也可以照着同一套方法做：建立术语表，建立问题池，围绕利率、通胀、汇率、财政、地方债、房地产、消费、失业率、GDP、货币政策、财政政策这些概念展开。
+            </p>
+            <p>
+              最终目标是建立一个个人认知系统。每次接触信息时，都能把它放进某个结构里，把陌生词转成可复述的概念，把碎片新闻转成问题线索，把模糊感转成下一次追问。
+            </p>
+            <div class="quote">
+              每次遇到陌生概念，不划走；把它变成一张卡片、一个问题、一段自己的解释。
+            </div>
+            <p>
+              这就是我给自己的破局方法。它不要求我突然变成精力充沛的学习机器，也不要求我每天读很多文章。它只要求我每周留下一点结构。对一个忙碌程序员来说，这已经足够开始改变。
+            </p>
+          </section>
+        </article>
+
+        <aside class="side-note">
+          <h2>给下次的自己</h2>
+          <p>如果又觉得自己认知低，不要先责备自己。回到这个系统，选一个领域，补一个词，追一个问题。</p>
+          <ul>
+            <li>工作日只输入，不强求笔记。</li>
+            <li>遇到不懂，丢给 AI 解释。</li>
+            <li>周末只沉淀 30 分钟。</li>
+            <li>每周只产出一个小东西。</li>
+            <li>一个领域跑通后，再开下一个领域。</li>
+            <li>认知焦虑上来时，回到问题池，不刷信息流。</li>
+          </ul>
+        </aside>
+      </div>
+
+      <footer>
+        本文是个人认知训练系统的阶段记录，可作为后续复盘入口。
+      </footer>
+    </main>
+  </body>
+</html>

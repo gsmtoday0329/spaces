@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>四个一致性指标怎么选 - 武清南路</title>
+    <meta
+      name="description"
+      content="用定义、适用场景和具体例子解释 Cohen's Kappa、Krippendorff's Alpha、混淆矩阵和 Weighted Kappa，并给出 Agent 评测中的选择方法。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#articles">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell">
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-22">July 22, 2026</time>
+            <span>Agent 评测</span>
+            <span>统计指标</span>
+          </p>
+          <h1>四个一致性指标怎么选</h1>
+          <p class="lead">Cohen's Kappa、Krippendorff's Alpha、混淆矩阵和 Weighted Kappa 解决的不是同一个问题。先看标签形式和决策风险，再决定报告什么。</p>
+        </header>
+
+        <p>
+          在 Agent 评测里，我们经常说“两个标注员的一致率是 95%”，却没有继续追问：这个一致是因为标准真的清楚，还是因为绝大多数样本都很容易、都被标成了“通过”？一致性指标的作用，是帮助团队判断标注标准是否可执行、机器评估器是否学到了人工标准，以及哪些类别正在被漏检。
+        </p>
+
+        <p>
+          下面四种工具可以放在同一套评测流程里，但它们的输入和输出不同：Kappa 和 Alpha 总结标注者之间的一致性，混淆矩阵展开每一类的错对分布，Weighted Kappa 则把有序标签的“差一点”和“差很多”区分开。
+        </p>
+
+        <section>
+          <h2>Cohen's Kappa：两位标注者的随机校正一致性</h2>
+
+          <p>
+            Cohen's Kappa 是衡量“两位标注者对同一批样本分类结果一致程度”的统计指标。它比单纯计算“标注一致率”更进一步：会扣除两人仅凭随机机会产生的一致。
+          </p>
+
+          <div class="sequence-note">κ = (实际一致率 − 随机一致率) / (1 − 随机一致率)</div>
+
+          <p>
+            例如，甲乙两位标注员分别判断 100 条客服 Agent 回复是否“通过”。其中 85 条判断相同；按照两人各自的“通过 / 失败”比例，随机情况下预计会有 50% 的一致，那么 κ = (0.85 − 0.50) / (1 − 0.50) = 0.70。这个数字说明，扣除随机一致后，双方仍有较好的对齐程度。
+          </p>
+
+          <h3>适用场景</h3>
+          <ul>
+            <li>只有两位标注者。</li>
+            <li>标签是没有顺序的类别，例如“通过 / 失败”“幻觉 / 非幻觉”“应追问 / 不必追问”。</li>
+            <li>需要在校准阶段判断两人的 Rubric 是否足够清楚。</li>
+          </ul>
+
+          <p>
+            Kappa 不是“标准正确”的证明，也不是发版门禁的万能阈值。类别极不平衡时，即使 κ 不低，也要查看少数类的数量、Recall 和漏检 Case。
+          </p>
+        </section>
+
+        <section>
+          <h2>Krippendorff's Alpha：多人、不完整标注和多种尺度</h2>
+
+          <p>
+            Krippendorff's Alpha 用来衡量多名标注者在同一批数据上的一致性。它可以处理某些样本只有部分人标注的情况，也能根据标签尺度选择不同的“分歧距离”：nominal 只关心是否相同，ordinal 会考虑顺序，interval 和 ratio 则可以使用数值距离。
+          </p>
+
+          <p>
+            例如，三位评测员审核 120 条 Agent 轨迹：每条轨迹通常由两人独立标注，争议样本再由第三人仲裁，另有少量样本因证据缺失被留空。此时 Alpha 比强行补齐缺失值、再计算两两 Kappa 更合适，因为它可以在保留缺失标注的前提下汇总整体分歧。
+          </p>
+
+          <h3>适用场景</h3>
+          <ul>
+            <li>标注者多于两人，或不同 Case 的标注人数不相同。</li>
+            <li>存在 unknown、跳过或暂时无法判断的标签。</li>
+            <li>同一项目里既有名义分类，也有有序评分，需要明确指定尺度。</li>
+          </ul>
+
+          <p>
+            使用 Alpha 时必须记录标签尺度、缺失值规则和距离函数。否则，即使报出了一个精确的小数，也无法判断它是否对应了业务真正关心的分歧。
+          </p>
+        </section>
+
+        <section>
+          <h2>混淆矩阵：把“错在哪里”展开</h2>
+
+          <p>
+            混淆矩阵不是单一的一致性系数，而是一张“预测标签 × 参考标签”的计数表。它把每个类别的正确命中、误报和漏报列出来，是检查 Judge 是否只会输出多数类的基础工具。
+          </p>
+
+          <p>
+            以“高风险失败”为正类，假设人工仲裁了 200 条样本，Judge 的结果如下：
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Judge / 人工仲裁</th>
+                  <th>失败</th>
+                  <th>通过</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>失败</td>
+                  <td>TP = 18</td>
+                  <td>FP = 10</td>
+                </tr>
+                <tr>
+                  <td>通过</td>
+                  <td>FN = 2</td>
+                  <td>TN = 170</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <ul>
+            <li><strong>Precision = 18 / (18 + 10) = 64.3%</strong>：Judge 报“失败”的样本里，有多少是真失败。</li>
+            <li><strong>Recall = 18 / (18 + 2) = 90%</strong>：真实失败里，Judge 检出了多少。</li>
+            <li><strong>False Negative Rate = 2 / (18 + 2) = 10%</strong>：真实失败被放行的比例。</li>
+          </ul>
+
+          <p>
+            这个例子中，Judge 可能让人工复核队列有一些误报，但只漏掉 2 条高风险失败。若目标是“不能漏掉 P0 风险”，Recall 和 False Negative Rate 比总体 accuracy 更值得优先关注。多分类任务可以为每个标签各自计算 one-vs-rest 的 Precision、Recall，再结合宏平均或加权平均。
+          </p>
+
+          <h3>适用场景</h3>
+          <ul>
+            <li>验证 LLM Judge、规则模型或分类器与人工 gold label 的差异。</li>
+            <li>类别不平衡，尤其需要观察少数类检出情况。</li>
+            <li>要决定人工复核队列的规模、风险阈值和误报 / 漏报取舍。</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Weighted Kappa：有序评分中的“分歧距离”</h2>
+
+          <p>
+            Weighted Kappa 是 Kappa 的有序标签版本。它不把所有分歧视为同样严重，而是根据标签之间的距离加权：把 4 分标成 5 分，通常比把 1 分标成 5 分的惩罚小。常见权重有线性权重和二次权重，选择哪一种应在评测方案中提前写明。
+          </p>
+
+          <p>
+            例如，两位评测员用 1–5 分评价 Agent 的追问质量。甲给 4 分、乙给 5 分，说明双方判断接近；甲给 1 分、乙给 5 分，则说明对“完全不可用”和“表现优秀”的理解相差很大。普通 Kappa 只看到“不相同”，Weighted Kappa 还会保留这两种分歧程度的差别。
+          </p>
+
+          <h3>适用场景</h3>
+          <ul>
+            <li>标签有明确顺序，例如 1–5 分、差 / 一般 / 好、低 / 中 / 高风险。</li>
+            <li>相邻等级的争议可以接受，跨级争议需要重点处理。</li>
+            <li>希望将评分者对严重程度的分歧纳入一致性判断。</li>
+          </ul>
+
+          <p>
+            如果标签只是“通过 / 失败”，没有自然顺序，就不要使用 Weighted Kappa；如果评分锚点含糊，先修订 Rubric 比选择更复杂的权重更重要。
+          </p>
+        </section>
+
+        <section>
+          <h2>四个工具如何组合</h2>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>问题</th>
+                  <th>首选工具</th>
+                  <th>还要补充什么</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>两位标注员的二元 / 名义分类是否对齐？</td>
+                  <td>Cohen's Kappa</td>
+                  <td>每类数量、混淆矩阵、争议 Case</td>
+                </tr>
+                <tr>
+                  <td>多人且有缺失标注，整体分歧多大？</td>
+                  <td>Krippendorff's Alpha</td>
+                  <td>尺度、缺失规则、分层 Alpha</td>
+                </tr>
+                <tr>
+                  <td>Judge 具体漏了哪些问题？</td>
+                  <td>混淆矩阵</td>
+                  <td>Precision、Recall、FNR 和风险分层</td>
+                </tr>
+                <tr>
+                  <td>有序评分的差一档和差多档是否应区别对待？</td>
+                  <td>Weighted Kappa</td>
+                  <td>权重方案、评分锚点和分布</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            实际工作中可以这样串起来：先让两位标注员在校准集上计算 Cohen's Kappa，发现争议后修订 Rubric；当项目扩大到多人、出现缺失标注时，改用 Alpha 观察整体标准可靠性；Judge 上线校验时，用混淆矩阵检查高风险失败的 Recall；如果评分改成 1–5 级，再用 Weighted Kappa 判断评分距离上的分歧。
+          </p>
+        </section>
+
+        <section>
+          <h2>一个从线上 Badcase 到回归的例子</h2>
+
+          <p>
+            假设线上抽到一条“Agent 在用户没有提供日期时直接预订”的轨迹。业务负责人定义预期行为为“先追问日期，不得调用预订工具”；评测负责人把它加入校准队列，记录 <code>trace_id</code>、<code>scene</code>、<code>risk_level</code>、<code>expected_behavior</code> 和 <code>model_version</code>。两位标注员独立标为“失败”，因此该 Case 进入 gold 集。
+          </p>
+
+          <p>
+            评测负责人随后用混淆矩阵检查 Judge 是否能检出同类失败：如果 Recall 只有 60%，开发者需要查看 Judge 的证据引用和 Prompt 规则，修复后在未参与调优的回归集上重跑。只有当回归集通过、P0 类别的漏检率达到事先约定的验收条件，且上线后抽检没有出现新的同类漏检，这条修复才算完成。标注结论、一致性统计、修复版本和线上验证结果应保留在同一条资产记录中。
+          </p>
+        </section>
+
+        <section>
+          <h2>最后的判断</h2>
+
+          <p>
+            不要问“哪个指标最高”，而要问“这次决策最怕哪一种错误”。两位标注员的名义分类看 Cohen's Kappa；多人和缺失值看 Krippendorff's Alpha；要定位少数类漏检看混淆矩阵；有序评分看 Weighted Kappa。无论选择哪一个，都应同时报告样本分布、类别数量和代表性错误，而不是用一个漂亮的小数替代证据。
+          </p>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>

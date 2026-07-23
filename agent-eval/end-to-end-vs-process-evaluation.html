@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent 评测里的端到端评测和过程评测 - 武清南路</title>
+    <meta
+      name="description"
+      content="解释端到端评测和过程评测分别解决什么问题，以及业务侧如何把二者组合成可回归的评测流程。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#articles">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell post-with-toc">
+      <nav class="post-toc" aria-label="文章目录">
+        <strong>目录</strong>
+        <a href="#why">为什么需要两种评测</a>
+        <a href="#end-to-end">端到端评测看任务结果</a>
+        <a href="#process">过程评测看执行轨迹</a>
+        <a href="#relationship">二者不是二选一</a>
+        <a href="#business-use">业务侧怎么组合使用</a>
+      </nav>
+
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-12">July 12, 2026</time>
+            <span>Agent 评测</span>
+            <span>评测方法</span>
+          </p>
+          <h1>Agent 评测里的端到端评测和过程评测</h1>
+          <p class="lead">
+            一个 Agent 评测任务，至少要回答两个问题：任务最后有没有完成，以及它是怎么完成或失败的。
+          </p>
+        </header>
+
+        <p>
+          很多 Agent 评测讨论会把这两个问题混在一起。有人问最终回答好不好，有人看工具调用对不对，还有人关心轨迹是不是符合预期。这些都重要，但它们不是同一个层面的问题。
+        </p>
+
+        <p>
+          我更愿意先把它拆开：端到端评测看任务结果，过程评测看执行轨迹。前者回答“这个 Agent 能不能把事办成”，后者回答“它为什么办成、为什么失败、哪里需要修”。
+        </p>
+
+        <p>
+          简单说，端到端评测负责判断能不能交付给用户，过程评测负责告诉团队该修哪里。
+        </p>
+
+        <figure class="post-figure">
+          <img
+            src="../assets/end-to-end-vs-process-evaluation-illustrations/01-two-lenses-same-task.png"
+            width="1672"
+            height="941"
+            alt="双镜头观察同一个 Agent 任务：一边看最终结果，一边看执行轨迹。"
+          />
+        </figure>
+
+        <section id="why">
+          <h2>为什么需要两种评测</h2>
+          <p>
+            传统大模型应用往往评估“这一轮回答是否正确”。但 Agent 的复杂性不只在最后一句话，而在它为了完成任务所经历的路径：识别意图、选择工具、检索知识、补齐参数、调用接口、处理异常，再把结果交付给用户。
+          </p>
+
+          <p>
+            只评最终回答会漏掉很多风险。一个 Agent 可能最后答对了，但中间调用了错误工具、绕了很多无效步骤、读取了不该读取的数据，或者只是碰巧在这条样本上成功。反过来，一个 Agent 最终失败了，也需要知道失败发生在意图理解、工具选择、参数填写、外部系统返回，还是最终表达。
+          </p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/end-to-end-vs-process-evaluation-illustrations/02-correct-answer-hidden-risk.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="最终答案正确，但执行轨迹中隐藏着错误工具、无效步骤或不该读取的数据。"
+            />
+          </figure>
+
+          <p>
+            但只看过程也不够。轨迹看起来合理，不代表业务任务真的完成；工具参数都对，也不代表最终状态符合用户预期。所以两种评测必须放在同一个评测任务里看。
+          </p>
+        </section>
+
+        <section id="end-to-end">
+          <h2>端到端评测看任务结果</h2>
+          <p>
+            端到端评测是把 Agent 当成一个完整系统来评估。评测从用户任务开始，让 Agent 在真实或模拟环境里完整执行，然后根据最终回复、最终状态或业务验收条件判断任务是否成功。
+          </p>
+
+          <p>一条端到端样本不应该只是一个问题，至少要写清楚：</p>
+
+          <ul>
+            <li>用户输入和必要上下文是什么。</li>
+            <li>Agent 可用的工具、数据、权限和初始状态是什么。</li>
+            <li>怎样算成功，怎样算失败。</li>
+            <li>最终回复或最终环境状态应该满足什么断言。</li>
+            <li>是否有安全、成本、时延或体验上的限制。</li>
+          </ul>
+
+          <p>
+            如果任务涉及状态变化，最终状态比最终回复更重要。比如客户信息有没有正确更新，工单有没有创建并包含必要字段，报告有没有生成且可以打开。这类任务不能只看 Agent 最后说“已经完成”。
+          </p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/end-to-end-vs-process-evaluation-illustrations/03-final-state-acceptance.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="验收 Agent 是否真的完成任务，要检查系统中的真实最终状态，而不只是最后一句回复。"
+            />
+          </figure>
+        </section>
+
+        <section id="process">
+          <h2>过程评测看执行轨迹</h2>
+          <p>
+            过程评测评估的是 Agent 的执行轨迹。它可以包括模型调用、工具调用、检索结果、路由决策、参数、异常、重试、权限判断和中间回复。
+          </p>
+
+          <p>
+            它最适合回答“为什么”。失败是因为一开始理解错了，还是工具选错了；是参数没填全，还是工具返回后没有正确处理；是检索证据不相关，还是最终总结时编造了不存在的信息。
+          </p>
+
+          <p>过程评测不要求每次路径都完全一样。对于开放任务，合理路径可能有多条。更重要的是定义关键过程约束：</p>
+
+          <ul>
+            <li>哪些信息必须先确认，不能直接假设。</li>
+            <li>哪些工具或业务流程应该被调用，哪些不能调用。</li>
+            <li>工具参数是否完整、准确、合规。</li>
+            <li>检索到的证据是否相关，最终回答是否基于证据。</li>
+            <li>缺参、歧义、异常和越界时应该追问、拒绝还是转人工。</li>
+          </ul>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/end-to-end-vs-process-evaluation-illustrations/04-flexible-paths-critical-constraints.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="Agent 可以走不同的合理路径，但关键确认、工具约束和异常处理不能遗漏。"
+            />
+          </figure>
+        </section>
+
+        <section id="relationship">
+          <h2>二者不是二选一</h2>
+          <p>
+            端到端评测和过程评测观察的是同一个 Agent 任务，只是视角不同。一个负责判断结果，一个负责解释路径。
+          </p>
+
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>维度</th>
+                  <th>端到端评测</th>
+                  <th>过程评测</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>核心问题</td>
+                  <td>任务有没有完成</td>
+                  <td>任务是怎样执行的</td>
+                </tr>
+                <tr>
+                  <td>评估对象</td>
+                  <td>完整任务、最终回复、最终状态</td>
+                  <td>执行轨迹、工具调用、中间步骤</td>
+                </tr>
+                <tr>
+                  <td>常见指标</td>
+                  <td>任务成功率、关键任务通过率、最终状态正确率</td>
+                  <td>工具调用准确率、参数正确率、路由准确率、检索相关性、异常恢复质量</td>
+                </tr>
+                <tr>
+                  <td>主要用途</td>
+                  <td>上线准入、版本回归、业务效果监控</td>
+                  <td>问题诊断、根因分析、能力下钻</td>
+                </tr>
+                <tr>
+                  <td>典型风险</td>
+                  <td>只知道失败，不知道为什么失败</td>
+                  <td>过程都对，但无法证明业务结果真的完成</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            在实践里，比较稳的用法是：先用端到端评测发现“有没有退化”，再用过程评测解释“为什么退化”。失败样本被修复后，再放回回归集中，下一次版本变更继续验证。
+          </p>
+        </section>
+
+        <section id="business-use">
+          <h2>业务侧怎么组合使用这两种评测</h2>
+          <p>
+            对业务侧来说，最重要的不是把端到端评测和过程评测做成两张报表，而是让它们服务同一个判断：这个 Agent 能不能上线、有没有退化、问题能不能被定位和修复。
+          </p>
+
+          <p>
+            一个更实用的做法，是先把每条评测样本当成一个任务来写。任务里必须有用户输入、必要上下文、工具环境、初始状态和最终成功标准。简单任务只需要写清楚最终行为或最终状态；涉及路由、工具、安全、检索、异常恢复的关键任务，还要补充过程预期，比如应该调用什么工具、必须确认哪些信息、什么情况下应该追问或拒绝。
+          </p>
+
+          <p>
+            执行评测时，先看结果层。端到端评测给出每个任务的成功或失败，也可以汇总任务成功率、关键任务通过率、版本胜率、最终状态正确性、成本和时延。这一层用于上线准入、版本回归、版本对比和线上质量监控。业务方最该关心的是：关键任务有没有失败，新版本有没有比基线退步，高风险样本是不是仍然能过。
+          </p>
+
+          <p>
+            接下来不要对所有样本平均用力，而是把失败、退化、低置信和高风险通过的样本展开到过程层。过程评测要看完整执行轨迹：意图有没有识别对，路由有没有走偏，工具有没有选错，参数有没有填全，检索证据是否相关，中间状态有没有丢，异常和越界有没有被正确处理。这样才能把“结果不好”拆成业务方和研发能处理的问题。
+          </p>
+
+          <p>最后的报告最好按同一条线组织：</p>
+
+          <p class="sequence-note">结果指标 -> 失败样本 -> 执行轨迹证据 -> 根因标签 -> 修复建议。</p>
+
+          <figure class="post-figure">
+            <img
+              src="../assets/end-to-end-vs-process-evaluation-illustrations/05-evaluation-repair-regression-loop.png"
+              width="1672"
+              height="941"
+              loading="lazy"
+              alt="评测闭环：从结果指标发现问题，经过诊断和修复，再回到回归验证。"
+            />
+          </figure>
+
+          <p>
+            根因标签不需要一开始就设计得很复杂，但要能指导动作。常见标签包括意图识别错误、路由错误、工具选择错误、参数错误、工具返回异常未处理、检索失败、基于错误证据回答、多轮状态丢失、缺参未追问、歧义未澄清、越界未拒绝、冗余步骤导致超时、最终表达错误、环境或依赖失败。
+          </p>
+
+          <p>
+            这样使用时，端到端评测是门禁和监控：它告诉业务能不能发布、有没有退化；过程评测是诊断和修复地图：它告诉团队问题发生在哪一步、该由谁处理、修完后用哪些样本回归。两者连起来，评测才不只是打分，而是能进入迭代。
+          </p>
+        </section>
+      </article>
+    </main>
+    <script>
+      const tocLinks = [...document.querySelectorAll(".post-toc a")];
+      const tocSections = tocLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+
+      const tocObserver = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+          if (!visible) return;
+
+          tocLinks.forEach((link) => {
+            link.classList.toggle("is-active", link.getAttribute("href") === `#${visible.target.id}`);
+          });
+        },
+        { rootMargin: "-18% 0px -62% 0px", threshold: [0.15, 0.35, 0.6] }
+      );
+
+      tocSections.forEach((section) => tocObserver.observe(section));
+    </script>
+  </body>
+</html>

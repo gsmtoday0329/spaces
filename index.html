@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>武清南路 - AI Agent 评测与个人学习笔记</title>
+    <meta name="description" content="记录 AI Agent 评测经验和工程实践，也整理用 AI 学习芯片等主题时留下的个人笔记。">
+    <meta property="og:title" content="武清南路">
+    <meta property="og:description" content="AI Agent 评测经验和工程实践，以及一些个人学习笔记。">
+    <link rel="stylesheet" href="assets/css/site.css">
+  </head>
+  <body>
+    <header class="catalog-header">
+      <div class="catalog-header-inner">
+        <h1 class="catalog-site-title">武清南路</h1>
+        <div class="catalog-sub">14 篇 · AI Agent 评测与个人学习笔记 · 发布于 GitHub Pages</div>
+        <input id="q" class="catalog-search" type="search" placeholder="搜索文章、主题或关键词……" autocomplete="off">
+      </div>
+    </header>
+
+    <main class="catalog-main" id="articles">
+
+      <section class="catalog-section" id="agent-eval">
+        <h2 class="catalog-section-title">Agent 评测 <small>11</small></h2>
+        <div class="catalog-path" aria-label="Agent 评测阅读路径">
+          <section class="catalog-group">
+            <header class="catalog-group-header">
+              <div>
+                <h3>建立评测框架</h3>
+              </div>
+            </header>
+            <div class="catalog-grid">
+              <a class="catalog-card" data-t="在线评测和离线评测" href="agent-eval/online-vs-offline-evaluation.html">
+                在线评测和离线评测
+              </a>
+              <a class="catalog-card" data-t="标准答案与评分量表 ground truth rubric" href="agent-eval/ground-truth-vs-rubric-evaluation.html">
+                标准答案与评分量表
+              </a>
+              <a class="catalog-card" data-t="按场景设计评测类型和评测集 scenario testsets" href="agent-eval/agent-eval-scenario-testsets.html">
+                按场景设计评测类型和评测集
+              </a>
+            </div>
+          </section>
+
+          <section class="catalog-group">
+            <header class="catalog-group-header">
+              <div>
+                <h3>建设评测资产</h3>
+              </div>
+            </header>
+            <div class="catalog-grid">
+              <a class="catalog-card" data-t="什么才算 agent 评测资产" href="agent-eval/what-is-evaluation-asset.html">
+                什么才算 Agent 评测资产
+              </a>
+              <a class="catalog-card" data-t="如何把生产流量转化为评测资产 sample governance" href="agent-eval/online-evaluation-sample-governance.html">
+                如何把生产流量转化为评测资产
+              </a>
+            </div>
+          </section>
+
+          <section class="catalog-group">
+            <header class="catalog-group-header">
+              <div>
+                <h3>分析 Agent 表现</h3>
+              </div>
+            </header>
+            <div class="catalog-grid">
+              <a class="catalog-card" data-t="端到端评测和过程评测" href="agent-eval/end-to-end-vs-process-evaluation.html">
+                端到端评测和过程评测
+              </a>
+              <a class="catalog-card" data-t="长程 agent 的过程评测 long horizon" href="agent-eval/long-horizon-process-evaluation.html">
+                长程 Agent 的过程评测
+              </a>
+            </div>
+          </section>
+
+          <section class="catalog-group">
+            <header class="catalog-group-header">
+              <div>
+                <h3>置信度与发版</h3>
+              </div>
+            </header>
+            <div class="catalog-grid">
+              <a class="catalog-card" data-t="cohen kappa krippendorff alpha 混淆矩阵 weighted kappa 一致性指标" href="agent-eval/annotation-agreement-metrics.html">
+                四个一致性指标怎么选
+              </a>
+              <a class="catalog-card" data-t="版本比较 差值 不确定性 mcnemar bootstrap winrate 加权分数" href="agent-eval/version-comparison-statistics.html">
+                版本比较里的几个统计术语
+              </a>
+              <a class="catalog-card" data-t="评测置信度 统计推断 judge 样本稳定性 confidence" href="agent-eval/evaluation-confidence-statistical-inference.html">
+                评测置信度：从标准对齐到统计推断
+              </a>
+            </div>
+          </section>
+
+          <section class="catalog-group catalog-group-secondary">
+            <header class="catalog-group-header">
+              <div>
+                <h3>团队与岗位</h3>
+              </div>
+            </header>
+            <div class="catalog-grid">
+              <a class="catalog-card" data-t="如何评价一个 ai agent 评测岗位 interview" href="agent-eval/evaluation-team-interview-diligence.html">
+                如何评价一个 AI Agent 评测岗位
+              </a>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="catalog-section" id="ai-learning">
+        <h2 class="catalog-section-title">AI 学习与芯片 <small>3</small></h2>
+        <div class="catalog-grid">
+          <a class="catalog-card" data-t="一个忙碌程序员的认知破局方法 cognition breakthrough" href="chip-news-glossary/cognition-breakthrough.html">
+            一个忙碌程序员的认知破局方法
+          </a>
+          <a class="catalog-card" data-t="芯片新闻术语手册 chip glossary" href="chip-news-glossary/">
+            芯片新闻术语手册
+          </a>
+          <a class="catalog-card" data-t="持续训练芯片新闻理解力 question pool" href="chip-news-glossary/question-pool.html">
+            持续训练芯片新闻理解力
+          </a>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="catalog-footer">
+      © 2026 武清南路
+    </footer>
+
+    <script>
+      var q = document.getElementById('q');
+      q.addEventListener('input', function () {
+        var v = q.value.trim().toLowerCase();
+        document.querySelectorAll('.catalog-card').forEach(function (c) {
+          c.classList.toggle('hidden', v.length > 0 && c.dataset.t.toLowerCase().indexOf(v) < 0);
+        });
+        document.querySelectorAll('.catalog-group').forEach(function (g) {
+          var any = Array.prototype.some.call(g.querySelectorAll('.catalog-card'), function (c) {
+            return !c.classList.contains('hidden');
+          });
+          g.classList.toggle('hidden', !any);
+        });
+        document.querySelectorAll('.catalog-section').forEach(function (s) {
+          var any = Array.prototype.some.call(s.querySelectorAll('.catalog-card'), function (c) {
+            return !c.classList.contains('hidden');
+          });
+          s.classList.toggle('hidden', !any);
+        });
+      });
+    </script>
+  </body>
+</html>

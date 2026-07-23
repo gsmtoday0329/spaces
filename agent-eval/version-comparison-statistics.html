@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>版本比较里的几个统计术语 - 武清南路</title>
+    <meta
+      name="description"
+      content="用一个同批 Task 的 Agent 版本对比例子，解释差值、不确定性、配对比较、McNemar 检验、配对 bootstrap、Winrate、加权分数和退化 Case。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#articles">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell">
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-22">July 22, 2026</time>
+            <span>Agent 评测</span>
+            <span>统计推断</span>
+          </p>
+          <h1>版本比较里的几个统计术语</h1>
+          <p class="lead">比较两个 Agent 版本时，先看每个 Task 的变化，再判断总体差值是否超过了样本不确定性。</p>
+        </header>
+
+        <p>
+          “实验版通过率 95%，基线版 93%，所以提升了 2 个百分点”只描述了一个表面差值。要判断这次改动是否真的更好，还需要知道这两个版本是不是面对同一批 Task、差异来自哪些 Case，以及如果重新抽一批样本，结论是否可能反过来。
+        </p>
+
+        <section>
+          <h2>先分清四个基本概念</h2>
+
+          <dl>
+            <dt>基线版（baseline）</dt>
+            <dd>当前用于参照的稳定版本，例如线上正在运行的 Agent 版本。</dd>
+            <dt>实验版（candidate / treatment）</dt>
+            <dd>正在验证的 Prompt、模型、工具或工作流版本。</dd>
+            <dt>差值（difference）</dt>
+            <dd>实验版指标减去基线版指标。例如通过率从 93% 到 95%，差值是 +2 个百分点，而不是“提升 2%”。</dd>
+            <dt>不确定性（uncertainty）</dt>
+            <dd>样本有限、任务分布变化和运行随机性带来的估计波动，通常用置信区间、bootstrap 分布或检验结果表达。</dd>
+          </dl>
+
+          <p>
+            版本比较的最小报告单元应该是：<code>baseline_score</code>、<code>candidate_score</code>、<code>difference</code>、差值的置信区间，以及退化样本清单。
+          </p>
+        </section>
+
+        <section>
+          <h2>为什么同一批 Task 要做配对比较</h2>
+
+          <p>
+            如果基线版和实验版分别抽到两批不同的 Task，分数差异可能来自任务难度，而不是版本变化。配对比较要求两个版本运行完全相同的 Task，并让每个 Task 产生一对结果。这样比较的是“同一题在两个版本之间怎么变”，而不是两批题目的平均难度。
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>基线版</th>
+                  <th>实验版</th>
+                  <th>变化</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>T01</td><td>通过</td><td>通过</td><td>不变</td></tr>
+                <tr><td>T02</td><td>失败</td><td>通过</td><td>修复</td></tr>
+                <tr><td>T03</td><td>通过</td><td>失败</td><td>退化</td></tr>
+                <tr><td>T04</td><td>通过</td><td>通过</td><td>不变</td></tr>
+                <tr><td>T05</td><td>失败</td><td>失败</td><td>不变</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            这个例子中，实验版修复了 1 条、退化了 1 条。即使总体通过率没有变化，也能看到版本行为发生了什么；如果退化的是 P0 Task，就不能用其他普通 Task 的改善把它抵消掉。
+          </p>
+        </section>
+
+        <section>
+          <h2>McNemar 检验：二元结果的配对比较</h2>
+
+          <p>
+            McNemar 检验用于同一批 Task 上的二元结果，例如“通过 / 失败”。它只关注两类不一致的配对：基线失败、实验通过的修复数 <code>b</code>，以及基线通过、实验失败的退化数 <code>c</code>。两边都通过或两边都失败的 Task 不参与这项检验，因为它们没有产生版本差异。
+          </p>
+
+          <div class="sequence-note">配对变化：b = 基线失败 → 实验通过；c = 基线通过 → 实验失败</div>
+
+          <p>
+            例如 200 个相同 Task 中，<code>b = 18</code>、<code>c = 8</code>。实验版净改善了 10 个 Task，但还要用 McNemar 检验判断这种不对称是否可能只是抽样波动。检验的 p 值不是“版本变好的概率”，也不是业务重要性的替代品；它只能回答在“没有系统性变化”的假设下，观察到这种不对称是否罕见。
+          </p>
+
+          <p>
+            当不一致样本很少时，应使用精确版本的 McNemar 检验，而不是只依赖大样本近似。无论检验结果如何，都要单独查看退化 Case。
+          </p>
+        </section>
+
+        <section>
+          <h2>配对 bootstrap：给差值一个区间</h2>
+
+          <p>
+            Bootstrap 是一种用已有样本反复重抽样来估计不确定性的方法。配对 bootstrap 不会把基线结果和实验结果拆开，而是把每个 Task 的结果对作为一个整体，随机“有放回”抽取许多批，再在每批上计算版本差值。
+          </p>
+
+          <ol>
+            <li>准备每个 Task 的结果对：<code>(baseline_result, candidate_result)</code>。</li>
+            <li>从这些 Task 对中有放回地抽取同样数量的样本。</li>
+            <li>计算这一批的指标差值，例如通过率差、平均分差或 Winrate。</li>
+            <li>重复几千次，取差值分布的 2.5% 和 97.5% 分位数作为 95% 置信区间。</li>
+          </ol>
+
+          <p>
+            如果通过率差值是 +2 个百分点，95% 区间为 [-1.0, +4.8] 个百分点，说明数据仍兼容“没有改善”甚至轻微退化；如果区间为 [+0.6, +3.4]，则对正向变化的证据更强。但这仍不能证明所有重要场景都改善了，P0 退化必须单独设门槛。
+          </p>
+        </section>
+
+        <section>
+          <h2>Winrate：成对比较谁赢得更多</h2>
+
+          <p>
+            Winrate 常用于两个回答的成对比较。对每个 Task，评测员或 Judge 选择“基线胜”“实验胜”或“平局”。最简单的实验版 Winrate 是：实验版获胜次数除以非平局比较次数；也可以报告平局率和基线版 Winrate，避免隐藏大量无法区分的样本。
+          </p>
+
+          <p>
+            例如 100 条 Task 中，实验版赢 45 条，基线版赢 30 条，平局 25 条。实验版 Winrate = 45 / (45 + 30) = 60%，但完整报告应写成“实验版 45 胜、30 负、25 平，非平局 Winrate 60%”。还要随机化 A/B 的展示顺序，避免位置偏差。
+          </p>
+        </section>
+
+        <section>
+          <h2>加权分数与非线性聚合</h2>
+
+          <h3>加权分数</h3>
+
+          <p>
+            加权分数是先给不同 Task、场景或风险等级分配权重，再计算总体分数。例如普通问答权重为 1，退款和权限操作权重为 3。它可以让高风险场景对总体结果有更大影响，但权重必须在版本比较前冻结，否则“分数变化”可能只是权重变了。
+          </p>
+
+          <h3>非线性聚合指标</h3>
+
+          <p>
+            非线性聚合是指整体指标不是各 Task 分数的简单平均，例如 <code>Pass^k</code>、阈值门槛、F1 或“所有关键步骤都成功才算通过”。少量 Case 的变化可能带来不成比例的整体变化，因此不宜只用普通的独立样本比例检验；通常用配对 bootstrap 直接重算完整指标，观察差值区间。
+          </p>
+        </section>
+
+        <section>
+          <h2>退化 Case 和 P0 退步为什么要单独看</h2>
+
+          <p>
+            总体分数的改善可能掩盖少量但不可接受的退化。版本比较至少要生成一张退化清单，包含 <code>trace_id</code> 或 <code>task_id</code>、<code>scene</code>、<code>risk_level</code>、基线结果、实验结果、<code>root_cause</code> 和 Owner。
+          </p>
+
+          <p>
+            一个实用规则是：普通场景可以讨论总体差值和置信区间；P0 场景另设“不得新增不可接受退化”的门槛。即使实验版总体提升 2 个百分点，只要它新增了一个高风险错误，也应先进入人工复核、修复和回归，而不是直接发版。
+          </p>
+        </section>
+
+        <section>
+          <h2>一份可执行的版本比较报告</h2>
+
+          <ol>
+            <li><strong>评测负责人</strong>冻结 Task 集、版本号、Rubric、权重和执行环境。</li>
+            <li><strong>开发者</strong>让两个版本运行同一批 Task，并保存每个 Task 的成对结果。</li>
+            <li><strong>评测负责人</strong>计算点差值；二元结果补充 McNemar 检验，复杂指标用配对 bootstrap 给出差值区间。</li>
+            <li><strong>业务负责人</strong>查看分场景结果和 P0 退化清单，确认总体改善没有违反风险边界。</li>
+            <li><strong>验收标准</strong>应同时写清总体差值、区间是否跨 0、P0 退化上限和后续线上验证方式。</li>
+          </ol>
+
+          <p class="sequence-note">版本结论 = 差值 + 不确定性 + 分层结果 + 退化清单</p>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>

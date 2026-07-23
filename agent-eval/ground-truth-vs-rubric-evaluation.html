@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ground Truth Based Eval 与 Rubric Based Eval：如何为 AI 应用选择合适的评测方法 - 武清南路</title>
+    <meta
+      name="description"
+      content="解释基于标准答案和基于评分量表的两类评测分别适合什么任务，以及如何把它们组合起来评估 AI Agent。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#articles">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell post-with-toc">
+      <nav class="post-toc" aria-label="文章目录">
+        <strong>目录</strong>
+        <a href="#question">先判断要回答什么</a>
+        <a href="#ground-truth">基于标准答案的评测</a>
+        <a href="#rubric">基于评分量表的评测</a>
+        <a href="#comparison">两类方法的区别</a>
+        <a href="#scenarios">按场景选择</a>
+        <a href="#combine">复杂任务如何组合</a>
+      </nav>
+
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-13">July 13, 2026</time>
+            <span>Agent 评测</span>
+            <span>评测方法</span>
+          </p>
+          <h1>Ground Truth Based Eval 与 Rubric Based Eval：如何为 AI 应用选择合适的评测方法</h1>
+          <p class="lead">
+            先问“结果对不对”，再问“结果好不好”：前者适合用确定规则验证，后者需要把质量拆成清晰的评分维度。
+          </p>
+        </header>
+
+        <p>
+          评测 AI Agent，最终都在判断一次输出是否达到了预期。但“预期”并不总是同一种东西：有的任务有明确答案或可验证的最终状态，有的任务没有唯一答案，却仍然可以判断它是否完整、可靠和有帮助。
+        </p>
+
+        <p>
+          这对应两类常用方法。Ground Truth Based Eval 以标准答案、业务规则或最终状态为依据；Rubric Based Eval 则先写出评分量表，再由人工或模型裁判判断质量。选错方法，分数往往会给出一种看似精确、其实失真的结论。
+        </p>
+
+        <section id="question">
+          <h2>先判断要回答什么</h2>
+          <p>
+            一个简单的分界问题是：这项任务是否存在清晰、稳定、可自动验证的正确结果？如果有，优先把它写成可执行的断言；如果没有，就不要勉强寻找唯一标准答案，而应该把“好”拆成一组可观察的要求。
+          </p>
+
+          <p class="sequence-note">结果对不对 → 用确定条件验证；结果好不好 → 用明确量表判断。</p>
+        </section>
+
+        <section id="ground-truth">
+          <h2>基于标准答案的评测</h2>
+          <p>
+            Ground Truth Based Eval 会为每条样本提供可验证的正确结果，再将 Agent 输出与它进行比较。这个结果不一定是一段标准文本；它也可以是确定的业务状态、结构化字段、计算结果，或一次工具执行后的环境状态。
+          </p>
+
+          <p>例如：</p>
+
+          <ul>
+            <li>数学题的结果是 <code>42</code>。</li>
+            <li>一笔订单应被取消，退款金额应为 99 元。</li>
+            <li>SQL 查询应返回指定记录。</li>
+            <li>Agent 应创建一张字段齐全的工单。</li>
+            <li>分类任务应输出指定标签。</li>
+          </ul>
+
+          <p>
+            评测器可以使用精确匹配、字段比对、规则校验、脚本断言，或针对等价表述的语义比较。关键不在于输出和参考文本逐字相同，而在于它是否满足那些明确、可验证的正确条件。
+          </p>
+
+          <p>
+            当业务结果可以被确定性验证时，这类方法应是首选。它的成本通常较低、复现性较好，也适合大规模自动化回归。对 Agent 尤其如此：涉及状态变化时，应优先检查最终系统状态和关键字段，而不是只看它最后说了“已经完成”。
+          </p>
+
+          <p>常见适用场景包括：</p>
+
+          <ul>
+            <li>结构化抽取、分类、数据分析、公式计算和代码执行。</li>
+            <li>订单处理、工单创建、权限变更等流程自动化。</li>
+            <li>工具调用中的工具名、关键参数、返回结果与最终环境状态。</li>
+            <li>边界清晰的事实问答，以及模型、提示词或工具协议变更后的回归测试。</li>
+          </ul>
+        </section>
+
+        <section id="rubric">
+          <h2>基于评分量表的评测</h2>
+          <p>
+            Rubric Based Eval 先定义一组评分维度和具体标准，再由人工或 LLM Judge 按量表判断输出。它适合没有唯一答案，但仍能依据清晰标准判断优劣的任务，例如客服回复、报告撰写、代码评审、旅行建议或复杂问答。
+          </p>
+
+          <p>以一条客服回复为例，量表可以检查：</p>
+
+          <ul>
+            <li>是否准确理解了用户问题。</li>
+            <li>是否给出了可执行的解决方案。</li>
+            <li>是否覆盖必要的风险提醒。</li>
+            <li>语气是否专业、礼貌。</li>
+            <li>是否虚构了不存在的信息。</li>
+          </ul>
+
+          <p>
+            每个维度可以是通过或不通过、1 到 5 分，或几个清晰等级。重要的是让评分者知道每一档分别意味着什么。相比“回答是否优秀”这样的泛化描述，“是否给出下一步动作”“是否说明不确定性”“是否引用了给定证据”更容易获得稳定的评分。
+          </p>
+
+          <p>
+            当业务真正关心的是完整性、专业性、帮助程度、表达质量或风险边界时，量表更合适。它能覆盖真实体验，但成本更高：需要设计好维度、给出足够示例，并定期核对人工与模型裁判的一致性。
+          </p>
+
+          <p>常见适用场景包括：</p>
+
+          <ul>
+            <li>客服与销售对话、邮件、报告、摘要和内容生成。</li>
+            <li>复杂知识问答中的准确性、覆盖度、引用可靠性和易懂程度。</li>
+            <li>代码生成与代码评审中的可维护性、安全性和边界处理。</li>
+            <li>多轮任务中的澄清、歧义处理、失败恢复与最终答复。</li>
+            <li>医疗、金融、法律、隐私和安全等高风险回复的边界审查。</li>
+          </ul>
+        </section>
+
+        <section id="comparison">
+          <h2>两类方法的区别</h2>
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>维度</th>
+                  <th>Ground Truth Based Eval</th>
+                  <th>Rubric Based Eval</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>判断依据</td>
+                  <td>标准答案、确定状态或明确规则。</td>
+                  <td>评分维度、等级定义与质量标准。</td>
+                </tr>
+                <tr>
+                  <td>输出形态</td>
+                  <td>通常有唯一答案或有限的正确集合。</td>
+                  <td>通常有多种合理表达与解法。</td>
+                </tr>
+                <tr>
+                  <td>常见实现</td>
+                  <td>精确匹配、字段比对、规则校验、脚本断言。</td>
+                  <td>人工评分、LLM Judge、结构化评分表。</td>
+                </tr>
+                <tr>
+                  <td>结果形式</td>
+                  <td>正确或错误、通过或失败、字段正确率。</td>
+                  <td>单维得分、总分、通过率与问题标签。</td>
+                </tr>
+                <tr>
+                  <td>一致性</td>
+                  <td>规则明确时较高，容易复现。</td>
+                  <td>取决于量表质量与评分器校准。</td>
+                </tr>
+                <tr>
+                  <td>主要风险</td>
+                  <td>标准答案覆盖不足，或把等价答案误判为错。</td>
+                  <td>标准模糊导致评分漂移，裁判模型也可能有偏差。</td>
+                </tr>
+                <tr>
+                  <td>最适合的问题</td>
+                  <td>“结果对不对？”</td>
+                  <td>“结果好不好、够不够好？”</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenarios">
+          <h2>按场景选择</h2>
+          <p>
+            许多实际 Agent 同时处理数据、规则、策略和内容，因此很少只用一种方法。一个实用原则是：必须正确的事实、字段、预算与系统动作，用 Ground Truth 做硬校验；策略合理性、方案完整性和表达质量，用 Rubric 判断。
+          </p>
+
+          <div class="table-wrap comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>任务场景</th>
+                  <th>推荐方法</th>
+                  <th>评测重点</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>生成运营方案</td>
+                  <td>Rubric 为主，Ground Truth 辅助。</td>
+                  <td>目标理解、策略完整性、资源配置、风险预案与可执行性；同时校验周期、预算和业务规则。</td>
+                </tr>
+                <tr>
+                  <td>自动配置权益或触达任务</td>
+                  <td>Ground Truth 为主。</td>
+                  <td>人群、门槛、额度、库存、预算、投放时间、频控与审批状态是否符合规则。</td>
+                </tr>
+                <tr>
+                  <td>经营分析与复盘报告</td>
+                  <td>组合使用。</td>
+                  <td>指标口径、数值与计算正确性；归因是否有证据，建议是否具体，结论是否与数据一致。</td>
+                </tr>
+                <tr>
+                  <td>生成通知或商品文案</td>
+                  <td>Rubric 为主，Ground Truth 辅助。</td>
+                  <td>清晰度、目标人群匹配与语气；同时校验字数、变量、敏感词、活动信息和合规要求。</td>
+                </tr>
+                <tr>
+                  <td>自动创建活动、排期或工单</td>
+                  <td>Ground Truth 为主。</td>
+                  <td>最终状态是否创建成功，字段、依赖关系、审批链和权限是否正确。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="combine">
+          <h2>复杂任务如何组合</h2>
+          <p>
+            以“为一个增长目标生成运营方案”为例，它没有唯一正确答案，因此应该以 Rubric 为主。量表可检查目标是否对齐、是否包含目标人群与活动机制、关键判断是否基于给定数据、资源是否符合约束、执行动作和风险预案是否清楚。
+          </p>
+
+          <p>
+            但其中的一部分条件仍然是确定的：预算不能超过上限，活动只能在指定日期上线，优惠额度必须落在允许范围内。这些不该由一个宽泛的质量分数来兜底，而应使用 Ground Truth 做独立校验。否则，一份语言流畅却无法落地的方案仍可能拿到高分。
+          </p>
+
+          <p>
+            所以，两类评测不是彼此替代的关系。先用确定条件守住事实、字段和最终状态的底线，再用评分量表检查解释、交互和风险控制的质量。这样既能把关键错误拦在门外，也不会忽略用户真正感受到的好坏。
+          </p>
+        </section>
+      </article>
+    </main>
+
+    <script>
+      const tocLinks = [...document.querySelectorAll(".post-toc a")];
+      const tocSections = tocLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+
+      const tocObserver = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+          if (!visible) return;
+
+          tocLinks.forEach((link) => {
+            link.classList.toggle("is-active", link.getAttribute("href") === `#${visible.target.id}`);
+          });
+        },
+        { rootMargin: "-18% 0px -62% 0px", threshold: [0.15, 0.35, 0.6] }
+      );
+
+      tocSections.forEach((section) => tocObserver.observe(section));
+    </script>
+  </body>
+</html>

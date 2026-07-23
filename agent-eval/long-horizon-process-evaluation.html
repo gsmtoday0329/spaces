@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>长程 Agent 的过程评测：难点与方法 - 武清南路</title>
+    <meta
+      name="description"
+      content="长程 Agent 执行链路长、路径多、错误会传播，只看最终结果远远不够。本文梳理过程评测的核心难点和当前可用的方法。"
+    />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="../index.html">武清南路</a>
+      <p class="site-description">AI Agent 评测经验和工程实践，也记录一些个人学习笔记。</p>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#articles">Articles</a>
+      </nav>
+    </header>
+
+    <main class="post-shell post-with-toc">
+      <nav class="post-toc" aria-label="文章目录">
+        <strong>目录</strong>
+        <a href="#context">背景：从端到端到过程评测</a>
+        <a href="#difficulties">长程过程评测的五个核心难点</a>
+        <a href="#methods">当前可用的过程评测方法</a>
+        <a href="#practice">落地建议：从哪里开始</a>
+        <a href="#references">参考文献</a>
+      </nav>
+
+      <article class="post">
+        <header class="post-header">
+          <a class="home-link" href="../index.html">返回首页</a>
+          <p class="post-meta">
+            <time datetime="2026-07-19">July 19, 2026</time>
+            <span>Agent 评测</span>
+            <span>过程评测</span>
+          </p>
+          <h1>长程 Agent 的过程评测：难点与方法</h1>
+          <p class="lead">执行 50 步以上的 Agent，只看最终结果等于闭着眼睛验收。但打开 trace 逐步检查，会遇到路径爆炸、错误传播归因困难、评判标准模糊等一系列问题。本文梳理这些难点，以及当前研究和工程实践中已经出现的应对方法。</p>
+        </header>
+
+        <section id="context">
+          <h2>背景：从端到端到过程评测</h2>
+
+          <p>
+            在<a href="./online-evaluation-sample-governance.html">上一篇文章</a>里，我们讨论了如何从线上流量中筛选有价值的样本，并区分了端到端评测和过程评测两种离线回归方式。端到端评测把 Agent 当黑盒——只看最终输出是否满足 rubric；过程评测打开 trace，检查执行路径中的关键决策是否正确。
+          </p>
+
+          <p>
+            对于短链路 Agent（3-5 步完成任务），过程评测相对直接：trace 短，路径少，rubric 容易写，错误归因清晰。但当 Agent 的执行链路拉长到几十步甚至上百步——比如代码 Agent 修复一个跨多文件的 bug、研究 Agent 完成一份多轮搜索和综合的报告、浏览器 Agent 在复杂网站上完成一个多页表单——过程评测的难度会出现质变。
+          </p>
+
+          <p>
+            这不是简单的"步骤多了检查也多了"。长程执行引入了一组短链路中不存在或可以忽略的结构性问题。
+          </p>
+        </section>
+
+        <section id="difficulties">
+          <h2>长程过程评测的五个核心难点</h2>
+
+          <h3>难点一：路径爆炸——同一个正确结果可以有大量合理路径</h3>
+
+          <p>
+            短链路任务的合理路径通常有限。但长程任务中，达到同一正确结果的执行路径数量会组合爆炸。一个代码修复任务，Agent 可以先读日志再定位文件，也可以先搜索报错关键词再跳转；可以先改测试再改实现，也可以反过来；可以一次改完，也可以分步验证。这些都可能是正确路径。
+          </p>
+
+          <p>
+            这带来的评测困难是：你无法用一条参考轨迹（reference trajectory）来判断 Agent 的路径是否正确。如果用轨迹匹配，合理但不同的路径会被误判为失败。WebGraphEval 的研究发现，83.2% 的 Web 任务中，不同 Agent 走出了不同但都成功的路径；成功轨迹的实际长度平均是最短路径的 2.14 倍——额外步骤中有些是冗余，有些是合理的探索。
+          </p>
+
+          <p>
+            传统做法是只评结果、放弃过程评测。但这等于放弃了诊断能力——你知道 Agent 失败了，但不知道在哪一步、为什么失败。
+          </p>
+
+          <h3>难点二：错误传播——早期错误在后续步骤中放大</h3>
+
+          <p>
+            长程 Agent 的一个核心特征是：步骤之间有依赖关系，早期错误会向下游传播和放大。AgentEval 的研究发现，63% 的步骤级失败是从上游错误传播而来，而非当前步骤本身的局部错误；上下文丢失类错误在下游有 3.2 倍的放大效应。
+          </p>
+
+          <p>
+            这意味着：如果你只标注每一步是否正确（不考虑依赖），大量步骤会被误判。一个步骤本身的逻辑可能没问题，但它基于上游一个错误的中间结果执行，最终产出也是错的。这种情况下，错误应该归因到上游，而非当前步骤。
+          </p>
+
+          <p>
+            对于长程数据分析 Agent，研究显示 52-69% 的失败属于"长程错误"（cascade error、state management error），而非局部编码错误。性能从前 10% 进度到后 10% 进度下降近 47 个百分点。
+          </p>
+
+          <h3>难点三：评判标准难以预定义——什么算"好的中间步骤"</h3>
+
+          <p>
+            端到端评测的 rubric 相对好写：最终输出应该包含什么、不应该包含什么。但过程评测的 rubric 要回答更难的问题：Agent 在第 15 步应该做什么？这取决于前 14 步发生了什么，而前 14 步有大量可能的状态。
+          </p>
+
+          <p>
+            对于企业级主观任务，LH-Bench 的研究指出，传统 binary success 指标完全失效——这些任务要求评测的不是"Agent 是否产出了可接受的最终结果"，而是"Agent 是否按正确的工作流执行"：是否先做了检查再写代码、是否先提取设计 token 再生成组件、是否在修改前做了备份。这些过程约束是 pass/fail 评分看不到的。
+          </p>
+
+          <p>
+            更麻烦的是，过程评测的标准往往是领域特定的。写代码的好过程和写分析报告的好过程完全不同。
+          </p>
+
+          <h3>难点四：轨迹过长，超出评测者的处理能力</h3>
+
+          <p>
+            长程 Agent 的 trace 可以非常长。研究报告单条轨迹超过 200 万 token 的情况已不罕见。这不只是技术挑战（超出模型上下文窗口），也是认知挑战——无论是人工标注者还是 LLM judge，面对上百步的轨迹时都会出现注意力衰减。
+          </p>
+
+          <p>
+            SAFARI 的研究直接指出：把整条轨迹灌给一个 LLM judge 进行"被动阅读"式评价，会出现注意力稀释（attention dilution）和信息丢失。传统的人工标注方法更不可行——一条长轨迹的复核时间从几分钟变成几小时。
+          </p>
+
+          <h3>难点五："Lucky Pass"——结果正确但过程有问题</h3>
+
+          <p>
+            AgentLens 的研究揭示了一个被广泛忽视的问题：在 SWE-bench 上，10.7% 的通过测试的轨迹是"Lucky Pass"——Agent 通过反复试错、暴力收敛或不完整实现碰巧通过了测试，但其执行过程质量很低。
+          </p>
+
+          <p>Lucky Pass 的五种常见模式：</p>
+
+          <ul>
+            <li>最小且未验证——Agent 高估了自己的修改，没有做任何验证就提交。</li>
+            <li>暴力收敛——缺乏规划，反复低连贯性尝试后碰巧找到答案（占 34.4%）。</li>
+            <li>不完整实现——部分修复碰巧通过了不充分的测试覆盖（占 33.6%）。</li>
+            <li>过度探索——不聚焦的长轨迹，大量无关步骤。</li>
+            <li>偏离但有效——走了完全不同的有效路径（可能本身是合理的）。</li>
+          </ul>
+
+          <p>
+            如果只做端到端评测，这 10.7% 的"Lucky Pass"和真正高质量的解决方案完全无法区分。这直接影响模型排名——某些高通过率的 Agent 实际上 Lucky Pass 比例超过 20%，其实际推理能力被高估了。
+          </p>
+        </section>
+
+        <section id="methods">
+          <h2>当前可用的过程评测方法</h2>
+
+          <p>
+            针对上述五个难点，研究和工程社区已经发展出几类不同的方法。没有一种方法能同时解决所有问题，但组合使用可以显著提升过程评测的诊断能力。
+          </p>
+
+          <h3>方法一：DAG 结构化评测——将 trace 建模为依赖图</h3>
+
+          <p>
+            核心思路：不把 trace 当作线性序列逐步打分，而是识别步骤之间的依赖关系，构建有向无环图（DAG）。每个节点是一个执行步骤（Plan、ToolSelect、ParamGen、Execute、Synthesize），节点之间的边表示数据或逻辑依赖。
+          </p>
+
+          <p>这个结构解决的关键问题：</p>
+
+          <ul>
+            <li><strong>错误传播追踪</strong>：一旦某个上游节点被判定为失败，可以沿着 DAG 的边追踪它影响了哪些下游步骤，避免对下游步骤的误判。</li>
+            <li><strong>根因归因</strong>：通过贪心启发式（选择得分最低的父节点）进行根因定位，准确率 72%，接近人工 ceiling 的 81%。</li>
+            <li><strong>独立步骤并行评测</strong>：没有依赖关系的步骤可以并行评判，提高评测效率。</li>
+          </ul>
+
+          <p>
+            AgentEval 的实验显示，DAG 结构化评测的失败检测召回率是端到端评测的 2.17 倍（0.89 vs 0.41）。仅 DAG 结构本身就贡献了 +22 个百分点的提升——是所有评测组件中提升最大的单一因素。
+          </p>
+
+          <p>
+            实际操作中，DAG 的构建通常依赖 trace 的结构信息：span 之间的 parent-child 关系、工具调用的输入输出依赖、变量或状态的读写链。如果 Agent 框架的 tracing 本身就记录了 span 层级和依赖关系（如 OpenTelemetry 格式），DAG 可以半自动构建。
+          </p>
+
+          <h3>方法二：Skill-Grounded 评测——用工作流阶段定义检查点</h3>
+
+          <p>
+            核心思路：不预定义每一步应该做什么，而是定义工作流的关键阶段和阶段之间的顺序约束。只要 Agent 通过了这些阶段性检查点，具体的执行路径可以不同。
+          </p>
+
+          <p>
+            LH-Bench 的做法是用专家编写的 SKILL.md 文档既指导 Agent 执行，又作为评测时的 rubric 来源。每个 skill 定义了若干可观测的阶段转换，例如"token file 在 components 之前创建"。评测不检查具体实现，只检查这些阶段性事件是否按正确顺序发生。
+          </p>
+
+          <p>这解决了两个问题：</p>
+
+          <ul>
+            <li><strong>路径爆炸</strong>：不要求轨迹匹配，只要求关键阶段通过。</li>
+            <li><strong>评判标准模糊</strong>：把"好的过程"转化为可观测的阶段性事件，让 LLM judge 有明确的评判依据。</li>
+          </ul>
+
+          <p>
+            实验显示，使用专家编写的 rubric skill 后，LLM judge 的评审者间一致性从 κ=0.46 提升到 κ=0.60，提升跨多种 judge 模型（Gemini、Claude、GPT）稳定存在。
+          </p>
+
+          <p>
+            对于生产环境的评测团队，这意味着：为每个关键业务流程定义 3-7 个必经阶段和可观测的阶段标志，比为每一步写详细 rubric 更可行、更稳定。
+          </p>
+
+          <h3>方法三：轨迹图（Trajectory Graph）——用图表示多种合理路径</h3>
+
+          <p>
+            核心思路：收集同一任务上多个 Agent（或同一 Agent 多次运行）的轨迹，合并为一张加权有向图。图中的节点是规范化后的动作，边是观察到的动作转换。这样一张图同时表示了所有已知的合理路径。
+          </p>
+
+          <p>WebGraphEval 在这个图上做几件事：</p>
+
+          <ul>
+            <li><strong>必要性标注</strong>：对图中每个动作判断是否必要（76.7% 的动作被标为必要，与人工标注 78% 一致）。</li>
+            <li><strong>效率度量</strong>：比较实际轨迹长度与图中最短成功路径，量化冗余。</li>
+            <li><strong>关键边识别</strong>：哪些动作转换是"瓶颈"（必须经过）、哪些是"陷阱"（经过后成功率骤降）。</li>
+            <li><strong>行为风格分类</strong>：把 Agent 归类为"直接型""探索型"或"混合型"。</li>
+          </ul>
+
+          <p>
+            这个方法的前提是同一任务有足够多的轨迹样本。对于 benchmark 评测（同一任务跑多个模型或多次），天然满足。对于生产环境的在线评测，相似场景的聚类后也可以构建类似的图。
+          </p>
+
+          <h3>方法四：Process Reward Model——对轨迹质量进行连续评分</h3>
+
+          <p>
+            核心思路：训练一个专门的模型（Process Reward Model, PRM）来评价轨迹的过程质量，而非只看最终结果是否通过。
+          </p>
+
+          <p>
+            SWE-TRACE 的做法是：为每个任务生成 issue-specific 的 rubric（例如"应该修改哪些文件""应该避免重复验证循环"），然后用 rubric 对完整轨迹进行多维度评分（0-1），加权汇总为轨迹总分。这个总分用于区分同样通过测试的轨迹中，哪些过程质量更高。
+          </p>
+
+          <p>PRM 解决的问题：</p>
+
+          <ul>
+            <li>在所有通过测试的轨迹中区分质量——避免 Lucky Pass 被等同于 Ideal 轨迹。</li>
+            <li>在推理时作为 guide agent，对候选动作评分，提前剪枝低质量分支。</li>
+            <li>在训练时提供比 binary pass/fail 更细粒度的 reward signal。</li>
+          </ul>
+
+          <p>
+            SWE-TRACE 的 30B 模型在 SWE-bench Verified 上达到 71.2% 的解决率，同时 token 消耗降低约 29%——过程质量和效率同时提升。
+          </p>
+
+          <h3>方法五：主动调查式归因——超长轨迹的诊断方法</h3>
+
+          <p>
+            核心思路：对于超出上下文窗口的超长轨迹（百万 token 级别），不尝试一次性读完，而是用一个"调查员 Agent"配合定向工具，按假设驱动的方式逐段检查。
+          </p>
+
+          <p>SAFARI 的设计：</p>
+
+          <ul>
+            <li>调查员 Agent 配备 <code>read(offset, limit)</code> 和 <code>search(pattern)</code> 工具，可以像翻日志一样分段检查轨迹。</li>
+            <li>维护短期记忆（STM），跨多轮保持调查意图。</li>
+            <li>用 Atomic Reasoning Evaluator 并行验证具体假设，低置信度的触发二次调查。</li>
+          </ul>
+
+          <p>
+            在 1M token 预算下，SAFARI 比基线方法在 Who&amp;When 归因上高出 20%；在 25K token 预算下提升 19%。当错误位置在原生上下文窗口 5 倍之外时，传统方法完全失效，SAFARI 仍能保持 0.58 精确率。
+          </p>
+
+          <p>
+            这对生产环境的意义：长程 Agent 的故障排查不能只靠"把 trace 丢给 LLM judge 打分"。需要有针对性的诊断流程——先定位可疑区段，再深入分析，跟人工 debug 的思路一致。
+          </p>
+
+          <h3>方法六：复合过程评分——区分 Lucky Pass 和真实能力</h3>
+
+          <p>
+            核心思路：对通过测试的轨迹进行过程质量评分，把"通过"分为 Ideal、Solid、Lucky 三个等级。
+          </p>
+
+          <p>AgentLens 的复合评分包含四个维度：</p>
+
+          <ul>
+            <li><strong>结构对齐（20%）</strong>：Agent 的状态序列是否按合理顺序访问了正确区域。</li>
+            <li><strong>集合覆盖（15%）</strong>：参考状态的匹配比例。</li>
+            <li><strong>轨迹连贯性（30%）</strong>：意图-阶段序列是否表现为持续前进，而非反复回退。</li>
+            <li><strong>时间分布（35%）</strong>：各阶段在轨迹中的时间分布是否合理。</li>
+          </ul>
+
+          <p>
+            复合分数范围 0-100，≥70 为 Ideal，47-70 为 Solid，&lt;47 为 Lucky。这套评分显著改变了模型排名——某些高通过率模型因为 Lucky Pass 比例高达 23% 而排名大幅下降。
+          </p>
+        </section>
+
+        <section id="practice">
+          <h2>落地建议：从哪里开始</h2>
+
+          <p>
+            上面六种方法复杂度不同，不需要一次全部上线。真正的起点不是先训练一个 PRM，而是先把角色、数据和交接关系定清楚，再逐步增加自动化能力。
+          </p>
+
+          <h3>先把三类责任分开</h3>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>角色</th>
+                  <th>负责什么</th>
+                  <th>交付物与验收</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>业务负责人</td>
+                  <td>给出高风险场景、不可接受结果和必须经过的业务阶段，不负责逐条读 trace。</td>
+                  <td>版本化的场景清单与过程 rubric；每条规则都能对应一个可观测事件。</td>
+                </tr>
+                <tr>
+                  <td>Agent 开发</td>
+                  <td>提供可重放的 trace、版本元数据和步骤依赖，确认根因并完成修复与回归。</td>
+                  <td>能从 <code>trace_id</code> 还原关键步骤，能定位到具体 <code>span_id</code>、版本和责任模块。</td>
+                </tr>
+                <tr>
+                  <td>评测负责人</td>
+                  <td>把业务规则变成 evaluator、抽样与人工复核队列，维护资产准入标准。</td>
+                  <td>带状态的复核项、稳定的标注结果和版本化评测集；同一规则可重复执行。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>第一步：定义关键阶段检查点</h3>
+
+          <p>
+            业务负责人先为核心场景定义 Agent 必须经过的 3-7 个关键阶段，并写出允许的顺序变化和不可跳过项。这里不需要精确到每一步，但每个阶段必须能落到 trace 中的事件。例如：
+          </p>
+
+          <ul>
+            <li>客服退款 Agent：识别意图 → 验证身份 → 查询订单 → 调用退款工具 → 确认结果 → 通知用户</li>
+            <li>代码修复 Agent：定位问题 → 阅读相关代码 → 编写修复 → 运行测试 → 验证通过</li>
+          </ul>
+
+          <p>
+            评测负责人把它们登记为版本化 rubric，例如 <code>rubric_version = code-fix-process-v1</code>，并为每个检查点记录 <code>required_event</code>、<code>allowed_predecessors</code> 和 <code>failure_label</code>。验收标准不是“文档写完”，而是拿一条成功轨迹和一条失败轨迹试跑后，规则能稳定区分“完成验证”和“未验证就提交”。
+          </p>
+
+          <h3>第二步：追踪步骤间的依赖关系</h3>
+
+          <p>
+            Agent 开发需要让每次运行至少记录 <code>trace_id</code>、<code>session_id</code>、<code>span_id</code>、<code>parent_span_id</code>、步骤类型、工具名、输入输出摘要，以及 <code>model_version</code>、<code>prompt_version</code>、<code>tool_version</code>。如果一个步骤消费了前序产物，还要保留对应的依赖引用。
+          </p>
+
+          <p>
+            这样，当某一步被判为错误时，评测负责人可以沿依赖链向上寻找首个异常节点，并把下游步骤标为 <code>affected_by_upstream</code>，而不是重复归因。不必一开始就建设完整 DAG 平台；验收时只要能从一条失败 trace 还原“哪个输入由哪个步骤产生、错误从哪里开始传播”即可。
+          </p>
+
+          <h3>第三步：区分"通过"的质量</h3>
+
+          <p>
+            端到端结果通过后，评测负责人再运行一组过程检查，把“结果正确”和“过程可靠”拆成两个字段。下面的阈值只能按场景校准；若尚无历史分布，可以先使用示例规则，再用人工复核结果调整：
+          </p>
+
+          <ul>
+            <li><code>result_passed = true AND verification_event = false</code>：进入人工复核，检查是否属于未验证的 Lucky Pass。</li>
+            <li>同一工具连续失败或重复调用达到示例阈值 4 次：标记 <code>trigger_reason = repeated_tool_retry</code>。</li>
+            <li>轨迹步数高于同场景历史分布的异常区间：标记 <code>trigger_reason = unusually_long_trace</code>，但不直接判失败。</li>
+            <li>出现禁止工具、越权动作或跳过必经阶段：直接命中对应的高风险过程规则。</li>
+          </ul>
+
+          <p>
+            自动检查的输出应是复核队列项，而不是人工标注本身。队列项至少包含 <code>auto_score</code>、<code>trigger_reason</code>、可疑 <code>span_id</code> 和 <code>review_status = pending</code>。人工复核后再补充 <code>human_label</code>、<code>expected_behavior</code>、<code>root_cause</code>、<code>owner</code>，并将状态更新为 <code>confirmed</code> 或 <code>dismissed</code>。
+          </p>
+
+          <h3>第四步：对超长轨迹使用分段诊断</h3>
+
+          <p>
+            当轨迹超过评测模型的可靠上下文范围时，评测负责人按阶段边界、错误事件和状态变化切分轨迹。触发条件应由团队根据实际上下文窗口、成本和人工复核时长设定，而不是照搬一个统一 token 数。
+          </p>
+
+          <ul>
+            <li>先用错误码、超时、重试、阶段缺失和异常状态转换生成 <code>suspicious_segments</code>。</li>
+            <li>局部 judge 只读取可疑区段、它的直接父节点和必要上下文，输出判断、证据 span 与置信度。</li>
+            <li>低置信度样本进入人工复核；高置信度结果汇总成全局诊断，但保留证据引用。</li>
+          </ul>
+
+          <p>
+            一条诊断只有在复核者能从结论跳回原始 span，并复现这次归因时才算完成。只有“总体得分低”，没有证据位置和根因字段，不能交给开发修复。
+          </p>
+
+          <h3>第五步：积累轨迹样本后构建参考图</h3>
+
+          <p>
+            当同一场景已经积累多条经人工确认的成功与失败轨迹，评测负责人可以按规范化动作合并轨迹。节点记录阶段或工具动作，边记录转换次数、成功率和版本范围；只有人工确认过的路径才能作为“合理路径”，避免把高频错误固化成参考。
+          </p>
+
+          <p>
+            参考图的首个用途不是自动判定所有新轨迹，而是回答三个具体问题：哪些阶段是成功路径共有的、哪些转换之后失败率明显上升、当前版本是否出现从未见过的新路径。新路径先进入复核，确认合理后再进入下一版参考图。
+          </p>
+
+          <h3>一条样本怎样走完整个闭环</h3>
+
+          <p>以代码修复 Agent 为例，一条真实运行可以这样流转：</p>
+
+          <ol>
+            <li><strong>线上发现</strong>：运行的测试通过，但过程 evaluator 发现没有 <code>verification_event</code>，于是为 <code>trace_id = tr_7f2</code> 创建复核项，记录 <code>trigger_reason = passed_without_verification</code>。</li>
+            <li><strong>人工复核</strong>：评测负责人查看可疑 span，确认 Agent 修改后直接提交，将 <code>human_label</code> 记为 <code>lucky_pass</code>，并把预期行为写为“修改后运行相关测试并读取结果”。</li>
+            <li><strong>诊断与修复</strong>：Agent 开发确认 <code>root_cause = verification_step_not_enforced</code>，接收该项为 <code>owner</code>，修正流程约束并产出新 <code>prompt_version</code>。</li>
+            <li><strong>离线回归</strong>：评测负责人完成脱敏、去重和可复现性检查，把输入、必要环境与 rubric 加入 <code>asset_version = code-fix-process-v1</code>；开发在原样本和邻近场景上运行回归，写入 <code>regression_result</code>。</li>
+            <li><strong>线上验证</strong>：新版本发布后，评测负责人继续运行同一触发规则。观察窗口与通过标准由发布前约定；窗口结束后，只有原问题未复现且相邻过程指标未退化，复核项才更新为 <code>review_status = verified</code>。</li>
+          </ol>
+
+          <p class="sequence-note">
+            采集全部 trace → 运行过程评分 → 条件命中后进入复核队列 → 人工确认 → 修复与回归 → 通过资产准入 → 线上验证。这些是七个不同动作，不应合并成一个“数据回流”按钮。
+          </p>
+        </section>
+
+        <section id="references">
+          <h2>参考文献</h2>
+
+          <ul>
+            <li><a href="https://arxiv.org/html/2604.11978v1">The Long-Horizon Task Mirage? Diagnosing Where and Why Agentic Systems Break</a> — HORIZON 框架，3100+ 轨迹的失败模式分类</li>
+            <li><a href="https://arxiv.org/html/2604.23581">DAG-Structured Step-Level Evaluation for Agentic Workflows with Error Propagation Tracking</a> — AgentEval，DAG 结构化步骤级评测</li>
+            <li><a href="https://arxiv.org/html/2603.22744">Skill-Grounded Evaluation of Long-Horizon Agents on Subjective Enterprise Tasks</a> — LH-Bench，基于工作流阶段的评测</li>
+            <li><a href="https://arxiv.org/html/2604.14820v1">Optimizing Long-Horizon SWE Agents through Rubric Process Reward Models</a> — SWE-TRACE，过程 reward model</li>
+            <li><a href="https://arxiv.org/html/2605.12925v1">Revealing The Lucky Pass Problem in SWE-Agent Evaluation</a> — AgentLens，复合过程评分</li>
+            <li><a href="https://arxiv.org/html/2606.24626v1">Scaling Long Horizon Agentic Fault Attribution via Active Investigation</a> — SAFARI，主动调查式归因</li>
+            <li><a href="https://arxiv.org/html/2510.19205v1">Multi-Turn Trajectory Evaluation for Web Agents using Graph Representation</a> — WebGraphEval，轨迹图方法</li>
+            <li><a href="https://arxiv.org/html/2605.30434">On the Failure of Long-Horizon Agentic Data Analysis</a> — 长程数据分析 Agent 的错误传播研究</li>
+            <li><a href="https://arxiv.org/html/2606.11042v2">Workflow-GYM: Towards Long-Horizon Evaluation of Computer-use Agentic tasks</a> — 工作流阶段遗漏、错误传播、目标漂移</li>
+          </ul>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>
